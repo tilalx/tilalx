@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Dank Memes</title>
+    <link rel="stylesheet" href="meme.css">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+  </head>
+  <body>
+    <div id="meme-container">
+      <img id="meme" src="" alt="Loading..." onerror="replaceWithPlaceholder()">
+    </div>
+
+    <button id="load-btn" class="btn btn-active">Load New Meme</button>
+
+    <form id="interval-form">
+      <label for="interval-input">Auto Load Every:</label>
+      <input type="number" id="interval-input" min="1" value="10">
+      <span>seconds</span>
+      <button type="submit" class="btn">Start Auto Load</button>
+      <button id="stop-btn" type="button" class="btn btn-stop">Stop Auto Load</button>
+    </form>
+
+    <script src="meme.js"></script>
+  </body>
+</html>
