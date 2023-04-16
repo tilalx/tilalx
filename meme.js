@@ -48,4 +48,16 @@ function replaceWithPlaceholder() {
     const memeImg = document.getElementById('meme');
     memeImg.src = 'images/error.jpg';
 }
-  
+
+async function makeAsyncRequest() {
+  try {
+    const response = await fetch('https://n8n.aelx.de/webhook/ip', { mode: 'no-cors' });
+    const data = await response.json();
+    console.log(data);
+  } catch (error) {
+    console.error(error);
+  }
+  }
+
+  window.onload = makeAsyncRequest;
+  window.onload = loadMeme;

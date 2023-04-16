@@ -6,33 +6,24 @@
     font-variant: normal;
     text-rendering: auto;
     line-height: 1;
-}
+} 
+  
 .fa-3x {
-    font-size: 3em;
+font-size: 3em;
 }
+
 @keyframes fa-spin {
-    0% {
-        transform: rotate(0deg);
-    }
-    to {
-        transform: rotate(1turn);
-    }
+0% { transform: rotate(0deg); }
+to { transform: rotate(1turn); }
 }
-.fa-facebook:before {
-    content: "\f09a";
-}
-.fa-github:before {
-    content: "\f09b";
-}
-.fa-instagram:before {
-    content: "\f16d";
-}
-.fa-linkedin:before {
-    content: "\f08c";
-}
-.fa-twitter:before {
-    content: "\f099";
-}
+
+.fa-facebook:before { content: "\f09a"; }
+.fa-github:before { content: "\f09b"; }
+.fa-instagram:before { content: "\f16d"; }
+.fa-linkedin:before { content: "\f08c"; }
+.fa-twitter:before { content: "\f099"; }
+
+  
 @font-face {
     font-family: "Font Awesome 5 Brands";
     font-style: normal;
@@ -508,36 +499,30 @@ body {
     content: "";
     position: absolute;
     top: 2000px;
-}
-.display-1 {
+  }
+  
+  .display-1 {
     font-size: 4.2375rem;
-}
-@media (min-width: 576px) {
+  }
+  
+  @media (min-width: 576px) {
     .display-1 {
-        font-size: 4.96677rem;
+      font-size: 4.96677rem;
     }
-}
-@media (min-width: 768px) {
+  }
+  
+  @media (min-width: 768px) {
     .display-1 {
-        font-size: 6.02782rem;
+      font-size: 6.02782rem;
     }
-}
-@keyframes animation-16jpnkj {
-    0% {
-        background-position: -200px 0px;
-    }
-    100% {
-        background-position: calc(100% + 200px) 0px;
-    }
-}
-@keyframes animation-16jpnkj {
-    0% {
-        background-position: -200px 0px;
-    }
-    100% {
-        background-position: calc(100% + 200px) 0px;
-    }
-}
-.sf-hidden {
+  }
+  
+  @keyframes animation-16jpnkj {
+    0% { background-position: -200px 0; }
+    100% { background-position: calc(100% + 200px) 0; }
+  }
+  
+  .sf-hidden {
     display: none !important;
-}
+  }
+  
