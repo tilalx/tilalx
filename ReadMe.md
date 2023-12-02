@@ -14,6 +14,9 @@ Welcome! I am Tilo Alexander, a dynamic Software Developer and System Integrator
 - **C#**: Experienced in creating desktop and backend applications.
 - **C++**: Focused on system-level programming and performance enhancement.
 - **JavaScript & React**: Specialized in building dynamic, responsive web applications.
+- **VMware (vSphere)**: Proficient in virtualization and cloud computing solutions.
+- **Docker**: Adept in containerization and orchestrating distributed applications.
+- **Bamboo**: Experienced in using this continuous integration and deployment tool for efficient software delivery.
 
 ## Integration Skills
 
@@ -26,8 +29,3 @@ As an Apprentice IT Specialist in System Integration, I excel in:
 
 - 🤝 Open for collaboration on innovative software and system integration projects.
 - 📫 Contact: [tilo.alexander@aelx.de](mailto:tilo.alexander@aelx.de)
-- 💬 Let's talk about technology, programming, and the latest in IT!
-
-## Personal Development
-
-- 🚀 Committed to continuous learning and staying abreast with evolving tech trends.
