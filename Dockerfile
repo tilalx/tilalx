@@ -4,15 +4,12 @@ FROM node:21
 # Set the working directory inside the container
 WORKDIR /app
 
-# Copy the package.json and yarn.lock files to the working directory
-COPY package.json package-lock.json ./
-
+# Copy the the workspace to the container
+COPY . .
 
 # Install the project dependencies
 RUN npm install
 
-# Copy the rest of the project files to the working directory
-COPY . .
 
 # Build the React project
 RUN npm run build
