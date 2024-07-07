@@ -45,7 +45,7 @@ const RAW_RUNTIME_STATE =
           ["react-router-dom", "virtual:4e678a97f9ee361b1f49d0cca7f9280632cbc56fe318d4e46af631b0be9fc35e6d1e0bb6ab5bd037dc332f15b1a8a0f9cdb89757e679bdd23b9a217ddacfc954#npm:6.24.0"],\
           ["react-scripts", "virtual:4e678a97f9ee361b1f49d0cca7f9280632cbc56fe318d4e46af631b0be9fc35e6d1e0bb6ab5bd037dc332f15b1a8a0f9cdb89757e679bdd23b9a217ddacfc954#npm:5.0.1"],\
           ["sass", "npm:1.77.6"],\
-          ["web-vitals", "npm:2.1.4"]\
+          ["web-vitals", "npm:4.2.1"]\
         ],\
         "linkType": "SOFT"\
       }]\
@@ -14469,7 +14469,7 @@ const RAW_RUNTIME_STATE =
           ["react-router-dom", "virtual:4e678a97f9ee361b1f49d0cca7f9280632cbc56fe318d4e46af631b0be9fc35e6d1e0bb6ab5bd037dc332f15b1a8a0f9cdb89757e679bdd23b9a217ddacfc954#npm:6.24.0"],\
           ["react-scripts", "virtual:4e678a97f9ee361b1f49d0cca7f9280632cbc56fe318d4e46af631b0be9fc35e6d1e0bb6ab5bd037dc332f15b1a8a0f9cdb89757e679bdd23b9a217ddacfc954#npm:5.0.1"],\
           ["sass", "npm:1.77.6"],\
-          ["web-vitals", "npm:2.1.4"]\
+          ["web-vitals", "npm:4.2.1"]\
         ],\
         "linkType": "SOFT"\
       }]\
@@ -19246,10 +19246,10 @@ const RAW_RUNTIME_STATE =
       }]\
     ]],\
     ["web-vitals", [\
-      ["npm:2.1.4", {\
-        "packageLocation": "../../.yarn/berry/cache/web-vitals-npm-2.1.4-68bdd9ecb2-10c0.zip/node_modules/web-vitals/",\
+      ["npm:4.2.1", {\
+        "packageLocation": "../../.yarn/berry/cache/web-vitals-npm-4.2.1-e9f9f93777-10c0.zip/node_modules/web-vitals/",\
         "packageDependencies": [\
-          ["web-vitals", "npm:2.1.4"]\
+          ["web-vitals", "npm:4.2.1"]\
         ],\
         "linkType": "HARD"\
       }]\
