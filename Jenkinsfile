@@ -62,7 +62,7 @@ pipeline {
         stage('Cleanup') {
             steps {
                 script {
-                    def builderName = "builder-${env.BUILD_ID}"
+                    def builderName = "builder-${env.BUILD_ID}-${env.BRANCH_NAME}"
                     sh "docker buildx rm ${builderName}"
                 }
             }
