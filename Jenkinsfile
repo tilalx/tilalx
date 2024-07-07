@@ -31,7 +31,7 @@ pipeline {
             steps {
                 script {
                     sh 'docker run --rm --privileged tonistiigi/binfmt --install all'
-                    def builderName = "builder-${env.BUILD_ID}"
+                    def builderName = "builder-${env.BUILD_ID}-${env.BRANCH_NAME}"
                     sh "docker buildx create --name ${builderName} --use"
                     sh 'docker buildx inspect --bootstrap'
                 }
