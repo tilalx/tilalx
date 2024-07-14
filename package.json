@@ -7,7 +7,7 @@
     "@emotion/react": "^11.11.1",
     "@emotion/styled": "^11.11.0",
     "@fingerprintjs/botd": "^1.7.2",
-    "@mui/icons-material": "^5.16.0",
+    "@mui/icons-material": "^5.16.1",
     "@mui/material": "^5.16.0",
     "@testing-library/jest-dom": "^6.4.6",
     "@testing-library/react": "^16.0.0",
