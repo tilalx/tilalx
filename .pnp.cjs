@@ -44,7 +44,7 @@ const RAW_RUNTIME_STATE =
           ["react-markdown", "virtual:4e678a97f9ee361b1f49d0cca7f9280632cbc56fe318d4e46af631b0be9fc35e6d1e0bb6ab5bd037dc332f15b1a8a0f9cdb89757e679bdd23b9a217ddacfc954#npm:9.0.1"],\
           ["react-router-dom", "virtual:4e678a97f9ee361b1f49d0cca7f9280632cbc56fe318d4e46af631b0be9fc35e6d1e0bb6ab5bd037dc332f15b1a8a0f9cdb89757e679bdd23b9a217ddacfc954#npm:6.24.1"],\
           ["react-scripts", "virtual:4e678a97f9ee361b1f49d0cca7f9280632cbc56fe318d4e46af631b0be9fc35e6d1e0bb6ab5bd037dc332f15b1a8a0f9cdb89757e679bdd23b9a217ddacfc954#npm:5.0.1"],\
-          ["sass", "npm:1.77.6"],\
+          ["sass", "npm:1.77.8"],\
           ["web-vitals", "npm:4.2.1"]\
         ],\
         "linkType": "SOFT"\
@@ -14336,7 +14336,7 @@ const RAW_RUNTIME_STATE =
           ["react-markdown", "virtual:4e678a97f9ee361b1f49d0cca7f9280632cbc56fe318d4e46af631b0be9fc35e6d1e0bb6ab5bd037dc332f15b1a8a0f9cdb89757e679bdd23b9a217ddacfc954#npm:9.0.1"],\
           ["react-router-dom", "virtual:4e678a97f9ee361b1f49d0cca7f9280632cbc56fe318d4e46af631b0be9fc35e6d1e0bb6ab5bd037dc332f15b1a8a0f9cdb89757e679bdd23b9a217ddacfc954#npm:6.24.1"],\
           ["react-scripts", "virtual:4e678a97f9ee361b1f49d0cca7f9280632cbc56fe318d4e46af631b0be9fc35e6d1e0bb6ab5bd037dc332f15b1a8a0f9cdb89757e679bdd23b9a217ddacfc954#npm:5.0.1"],\
-          ["sass", "npm:1.77.6"],\
+          ["sass", "npm:1.77.8"],\
           ["web-vitals", "npm:4.2.1"]\
         ],\
         "linkType": "SOFT"\
@@ -17170,10 +17170,10 @@ const RAW_RUNTIME_STATE =
       }]\
     ]],\
     ["sass", [\
-      ["npm:1.77.6", {\
-        "packageLocation": "../../.yarn/berry/cache/sass-npm-1.77.6-bcc408e096-10c0.zip/node_modules/sass/",\
+      ["npm:1.77.8", {\
+        "packageLocation": "../../.yarn/berry/cache/sass-npm-1.77.8-d0ad322666-10c0.zip/node_modules/sass/",\
         "packageDependencies": [\
-          ["sass", "npm:1.77.6"],\
+          ["sass", "npm:1.77.8"],\
           ["chokidar", "npm:3.6.0"],\
           ["immutable", "npm:4.3.6"],\
           ["source-map-js", "npm:1.2.0"]\
