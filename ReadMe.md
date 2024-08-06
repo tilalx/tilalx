@@ -25,5 +25,4 @@ As an Apprentice IT Specialist in System Integration, I excel in:
 
 ## Collaboration and Networking
 
-- 🤝 Open for collaboration on innovative software and system integration projects.
 - 📫 Contact: [tilo.alexander@aelx.de](mailto:tilo.alexander@aelx.de)
