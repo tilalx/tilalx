@@ -12,6 +12,7 @@ jobs:
     permissions:
       id-token: write
       pages: write
+      contents: read
 
     steps:
     # Step 1: Checkout the repository code
@@ -35,8 +36,13 @@ jobs:
     - name: Build React app
       run: yarn build
 
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: github-pages
+        path: ./build
+
     - name: Deploy to GitHub Pages
       uses: actions/deploy-pages@v4
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: ./build
