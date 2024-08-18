@@ -12,7 +12,6 @@
     "@mui/material": "^5.16.0",
     "@types/react": "^18.2.70",
     "axios": "^1.6.2",
-    "personal-page": "file:",
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "react-ga4": "^2.1.0",
