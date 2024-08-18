@@ -5,13 +5,13 @@
   "private": true,
   "dependencies": {
     "@babel/core": "^7.25.2",
-    "@emotion/react": "^11.11.1",
-    "@emotion/styled": "^11.11.0",
-    "@fingerprintjs/botd": "^1.7.2",
-    "@mui/icons-material": "^5.16.0",
-    "@mui/material": "^5.16.0",
-    "@types/react": "^18.2.70",
-    "axios": "^1.6.2",
+    "@emotion/react": "^11.13.0",
+    "@emotion/styled": "^11.13.0",
+    "@fingerprintjs/botd": "^1.9.1",
+    "@mui/icons-material": "^5.16.7",
+    "@mui/material": "^5.16.7",
+    "@types/react": "^18.3.3",
+    "axios": "^1.7.4",
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "react-ga4": "^2.1.0",
@@ -24,7 +24,6 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "GENERATE_SOURCEMAP=false react-scripts build",
-    "deploy": "gh-pages -d build",
     "winBuild": "set \"GENERATE_SOURCEMAP=false\" && react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
@@ -46,8 +45,7 @@
     "@testing-library/dom": "^10.4.0",
     "@testing-library/jest-dom": "^6.4.8",
     "@testing-library/react": "^16.0.0",
-    "@testing-library/user-event": "^14.5.2",
-    "gh-pages": "^6.1.1"
+    "@testing-library/user-event": "^14.5.2"
   },
   "packageManager": "yarn@4.1.1"
 }
