@@ -36,13 +36,9 @@ jobs:
     - name: Build React app
       run: yarn build
 
-    - name: Upload artifact
-      uses: actions/upload-pages-artifact@v1
-      with:
-        name: github-pages
-        path: ./build
-
-    - name: Deploy to GitHub Pages
-      uses: actions/deploy-pages@v4
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}
+    - name: Deploy with gh-pages
+      run: |
+        git remote set-url origin https://git:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git
+        yarn deploy -- -u "github-actions-bot <support+actions@github.com>"
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
