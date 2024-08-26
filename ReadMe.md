@@ -1,1 +1,1 @@
-![Metrics](https://github.com/tilalx/tilalx/blob/main/github-metrics.svg)
+![Metrics](https://raw.githubusercontent.com/tilalx/tilalx/main/github-metrics.svg)
