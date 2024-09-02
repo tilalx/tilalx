@@ -38,7 +38,7 @@ const RAW_RUNTIME_STATE =
           ["@testing-library/react", "virtual:75652d88318fd0933c149eb6e41917989817acd38fd9a789aa4cc00e2b3d3f84f6e6894afb8d1fcd94c5d9b78b8722ab49c36f7f1968174b79f47981fd324101#npm:16.0.0"],\
           ["@testing-library/user-event", "virtual:75652d88318fd0933c149eb6e41917989817acd38fd9a789aa4cc00e2b3d3f84f6e6894afb8d1fcd94c5d9b78b8722ab49c36f7f1968174b79f47981fd324101#npm:14.5.2"],\
           ["@types/react", "npm:18.3.5"],\
-          ["axios", "npm:1.7.5"],\
+          ["axios", "npm:1.7.7"],\
           ["react", "npm:18.3.1"],\
           ["react-dom", "virtual:75652d88318fd0933c149eb6e41917989817acd38fd9a789aa4cc00e2b3d3f84f6e6894afb8d1fcd94c5d9b78b8722ab49c36f7f1968174b79f47981fd324101#npm:18.3.1"],\
           ["react-ga4", "npm:2.1.0"],\
@@ -6634,11 +6634,11 @@ const RAW_RUNTIME_STATE =
       }]\
     ]],\
     ["axios", [\
-      ["npm:1.7.5", {\
-        "packageLocation": "../../.yarn/berry/cache/axios-npm-1.7.5-b23f777d13-10c0.zip/node_modules/axios/",\
+      ["npm:1.7.7", {\
+        "packageLocation": "../../.yarn/berry/cache/axios-npm-1.7.7-cfbedc233d-10c0.zip/node_modules/axios/",\
         "packageDependencies": [\
-          ["axios", "npm:1.7.5"],\
-          ["follow-redirects", "virtual:b23f777d131257fe06b28a56cd59d536ade6094d2d5cddf79ebcd90286ea121fbc1c0c5f6efdf33e86bbb9ba730236b40392ad6a044a1800798c0976b1e86464#npm:1.15.6"],\
+          ["axios", "npm:1.7.7"],\
+          ["follow-redirects", "virtual:cfbedc233d4c16068d815547ad303dec1092fdb3b8bb4ec9ab9c56bdd55b4e87650c7a525a88805756f4d2819c03abfd96a9983cfa927fedf995d1b8b879db38#npm:1.15.6"],\
           ["form-data", "npm:4.0.0"],\
           ["proxy-from-env", "npm:1.1.0"]\
         ],\
@@ -10046,10 +10046,10 @@ const RAW_RUNTIME_STATE =
         ],\
         "linkType": "SOFT"\
       }],\
-      ["virtual:b23f777d131257fe06b28a56cd59d536ade6094d2d5cddf79ebcd90286ea121fbc1c0c5f6efdf33e86bbb9ba730236b40392ad6a044a1800798c0976b1e86464#npm:1.15.6", {\
-        "packageLocation": "./.yarn/__virtual__/follow-redirects-virtual-09c9d52354/3/.yarn/berry/cache/follow-redirects-npm-1.15.6-50635fe51d-10c0.zip/node_modules/follow-redirects/",\
+      ["virtual:cfbedc233d4c16068d815547ad303dec1092fdb3b8bb4ec9ab9c56bdd55b4e87650c7a525a88805756f4d2819c03abfd96a9983cfa927fedf995d1b8b879db38#npm:1.15.6", {\
+        "packageLocation": "./.yarn/__virtual__/follow-redirects-virtual-ccbb070eb1/3/.yarn/berry/cache/follow-redirects-npm-1.15.6-50635fe51d-10c0.zip/node_modules/follow-redirects/",\
         "packageDependencies": [\
-          ["follow-redirects", "virtual:b23f777d131257fe06b28a56cd59d536ade6094d2d5cddf79ebcd90286ea121fbc1c0c5f6efdf33e86bbb9ba730236b40392ad6a044a1800798c0976b1e86464#npm:1.15.6"],\
+          ["follow-redirects", "virtual:cfbedc233d4c16068d815547ad303dec1092fdb3b8bb4ec9ab9c56bdd55b4e87650c7a525a88805756f4d2819c03abfd96a9983cfa927fedf995d1b8b879db38#npm:1.15.6"],\
           ["@types/debug", null],\
           ["debug", null]\
         ],\
@@ -10827,7 +10827,7 @@ const RAW_RUNTIME_STATE =
         "packageDependencies": [\
           ["http-proxy", "npm:1.18.1"],\
           ["eventemitter3", "npm:4.0.7"],\
-          ["follow-redirects", "virtual:b23f777d131257fe06b28a56cd59d536ade6094d2d5cddf79ebcd90286ea121fbc1c0c5f6efdf33e86bbb9ba730236b40392ad6a044a1800798c0976b1e86464#npm:1.15.6"],\
+          ["follow-redirects", "virtual:cfbedc233d4c16068d815547ad303dec1092fdb3b8bb4ec9ab9c56bdd55b4e87650c7a525a88805756f4d2819c03abfd96a9983cfa927fedf995d1b8b879db38#npm:1.15.6"],\
           ["requires-port", "npm:1.0.0"]\
         ],\
         "linkType": "HARD"\
@@ -18368,7 +18368,7 @@ const RAW_RUNTIME_STATE =
           ["@testing-library/react", "virtual:75652d88318fd0933c149eb6e41917989817acd38fd9a789aa4cc00e2b3d3f84f6e6894afb8d1fcd94c5d9b78b8722ab49c36f7f1968174b79f47981fd324101#npm:16.0.0"],\
           ["@testing-library/user-event", "virtual:75652d88318fd0933c149eb6e41917989817acd38fd9a789aa4cc00e2b3d3f84f6e6894afb8d1fcd94c5d9b78b8722ab49c36f7f1968174b79f47981fd324101#npm:14.5.2"],\
           ["@types/react", "npm:18.3.5"],\
-          ["axios", "npm:1.7.5"],\
+          ["axios", "npm:1.7.7"],\
           ["react", "npm:18.3.1"],\
           ["react-dom", "virtual:75652d88318fd0933c149eb6e41917989817acd38fd9a789aa4cc00e2b3d3f84f6e6894afb8d1fcd94c5d9b78b8722ab49c36f7f1968174b79f47981fd324101#npm:18.3.1"],\
           ["react-ga4", "npm:2.1.0"],\
