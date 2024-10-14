@@ -18,7 +18,7 @@
     "react-markdown": "^9.0.1",
     "react-router-dom": "^6.26.2",
     "react-scripts": "5.0.1",
-    "sass": "^1.79.4",
+    "sass": "^1.79.5",
     "web-vitals": "^4.2.3"
   },
   "scripts": {
