@@ -31,7 +31,7 @@ const RAW_RUNTIME_STATE =
           ["@emotion/react", "virtual:75652d88318fd0933c149eb6e41917989817acd38fd9a789aa4cc00e2b3d3f84f6e6894afb8d1fcd94c5d9b78b8722ab49c36f7f1968174b79f47981fd324101#npm:11.13.3"],\
           ["@emotion/styled", "virtual:75652d88318fd0933c149eb6e41917989817acd38fd9a789aa4cc00e2b3d3f84f6e6894afb8d1fcd94c5d9b78b8722ab49c36f7f1968174b79f47981fd324101#npm:11.13.0"],\
           ["@fingerprintjs/botd", "npm:1.9.1"],\
-          ["@mui/icons-material", "virtual:75652d88318fd0933c149eb6e41917989817acd38fd9a789aa4cc00e2b3d3f84f6e6894afb8d1fcd94c5d9b78b8722ab49c36f7f1968174b79f47981fd324101#npm:6.1.2"],\
+          ["@mui/icons-material", "virtual:75652d88318fd0933c149eb6e41917989817acd38fd9a789aa4cc00e2b3d3f84f6e6894afb8d1fcd94c5d9b78b8722ab49c36f7f1968174b79f47981fd324101#npm:6.1.4"],\
           ["@mui/material", "virtual:75652d88318fd0933c149eb6e41917989817acd38fd9a789aa4cc00e2b3d3f84f6e6894afb8d1fcd94c5d9b78b8722ab49c36f7f1968174b79f47981fd324101#npm:6.1.3"],\
           ["@testing-library/dom", "npm:10.4.0"],\
           ["@testing-library/jest-dom", "npm:6.5.0"],\
@@ -3383,6 +3383,14 @@ const RAW_RUNTIME_STATE =
           ["regenerator-runtime", "npm:0.14.1"]\
         ],\
         "linkType": "HARD"\
+      }],\
+      ["npm:7.25.7", {\
+        "packageLocation": "../../.yarn/berry/cache/@babel-runtime-npm-7.25.7-67dab27f3f-10c0.zip/node_modules/@babel/runtime/",\
+        "packageDependencies": [\
+          ["@babel/runtime", "npm:7.25.7"],\
+          ["regenerator-runtime", "npm:0.14.1"]\
+        ],\
+        "linkType": "HARD"\
       }]\
     ]],\
     ["@babel/template", [\
@@ -4570,18 +4578,18 @@ const RAW_RUNTIME_STATE =
       }]\
     ]],\
     ["@mui/icons-material", [\
-      ["npm:6.1.2", {\
-        "packageLocation": "../../.yarn/berry/cache/@mui-icons-material-npm-6.1.2-d3f2e842b9-10c0.zip/node_modules/@mui/icons-material/",\
+      ["npm:6.1.4", {\
+        "packageLocation": "../../.yarn/berry/cache/@mui-icons-material-npm-6.1.4-92b75ae463-10c0.zip/node_modules/@mui/icons-material/",\
         "packageDependencies": [\
-          ["@mui/icons-material", "npm:6.1.2"]\
+          ["@mui/icons-material", "npm:6.1.4"]\
         ],\
         "linkType": "SOFT"\
       }],\
-      ["virtual:75652d88318fd0933c149eb6e41917989817acd38fd9a789aa4cc00e2b3d3f84f6e6894afb8d1fcd94c5d9b78b8722ab49c36f7f1968174b79f47981fd324101#npm:6.1.2", {\
-        "packageLocation": "./.yarn/__virtual__/@mui-icons-material-virtual-2dc32a9419/3/.yarn/berry/cache/@mui-icons-material-npm-6.1.2-d3f2e842b9-10c0.zip/node_modules/@mui/icons-material/",\
+      ["virtual:75652d88318fd0933c149eb6e41917989817acd38fd9a789aa4cc00e2b3d3f84f6e6894afb8d1fcd94c5d9b78b8722ab49c36f7f1968174b79f47981fd324101#npm:6.1.4", {\
+        "packageLocation": "./.yarn/__virtual__/@mui-icons-material-virtual-5c258b2bc6/3/.yarn/berry/cache/@mui-icons-material-npm-6.1.4-92b75ae463-10c0.zip/node_modules/@mui/icons-material/",\
         "packageDependencies": [\
-          ["@mui/icons-material", "virtual:75652d88318fd0933c149eb6e41917989817acd38fd9a789aa4cc00e2b3d3f84f6e6894afb8d1fcd94c5d9b78b8722ab49c36f7f1968174b79f47981fd324101#npm:6.1.2"],\
-          ["@babel/runtime", "npm:7.25.6"],\
+          ["@mui/icons-material", "virtual:75652d88318fd0933c149eb6e41917989817acd38fd9a789aa4cc00e2b3d3f84f6e6894afb8d1fcd94c5d9b78b8722ab49c36f7f1968174b79f47981fd324101#npm:6.1.4"],\
+          ["@babel/runtime", "npm:7.25.7"],\
           ["@mui/material", "virtual:75652d88318fd0933c149eb6e41917989817acd38fd9a789aa4cc00e2b3d3f84f6e6894afb8d1fcd94c5d9b78b8722ab49c36f7f1968174b79f47981fd324101#npm:6.1.3"],\
           ["@types/mui__material", null],\
           ["@types/react", "npm:18.3.11"],\
@@ -18719,7 +18727,7 @@ const RAW_RUNTIME_STATE =
           ["@emotion/react", "virtual:75652d88318fd0933c149eb6e41917989817acd38fd9a789aa4cc00e2b3d3f84f6e6894afb8d1fcd94c5d9b78b8722ab49c36f7f1968174b79f47981fd324101#npm:11.13.3"],\
           ["@emotion/styled", "virtual:75652d88318fd0933c149eb6e41917989817acd38fd9a789aa4cc00e2b3d3f84f6e6894afb8d1fcd94c5d9b78b8722ab49c36f7f1968174b79f47981fd324101#npm:11.13.0"],\
           ["@fingerprintjs/botd", "npm:1.9.1"],\
-          ["@mui/icons-material", "virtual:75652d88318fd0933c149eb6e41917989817acd38fd9a789aa4cc00e2b3d3f84f6e6894afb8d1fcd94c5d9b78b8722ab49c36f7f1968174b79f47981fd324101#npm:6.1.2"],\
+          ["@mui/icons-material", "virtual:75652d88318fd0933c149eb6e41917989817acd38fd9a789aa4cc00e2b3d3f84f6e6894afb8d1fcd94c5d9b78b8722ab49c36f7f1968174b79f47981fd324101#npm:6.1.4"],\
           ["@mui/material", "virtual:75652d88318fd0933c149eb6e41917989817acd38fd9a789aa4cc00e2b3d3f84f6e6894afb8d1fcd94c5d9b78b8722ab49c36f7f1968174b79f47981fd324101#npm:6.1.3"],\
           ["@testing-library/dom", "npm:10.4.0"],\
           ["@testing-library/jest-dom", "npm:6.5.0"],\
