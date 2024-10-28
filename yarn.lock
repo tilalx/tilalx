@@ -1774,6 +1774,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@babel/runtime@npm:^7.25.7":
+  version: 7.26.0
+  resolution: "@babel/runtime@npm:7.26.0"
+  dependencies:
+    regenerator-runtime: "npm:^0.14.0"
+  checksum: 10c0/12c01357e0345f89f4f7e8c0e81921f2a3e3e101f06e8eaa18a382b517376520cd2fa8c237726eb094dab25532855df28a7baaf1c26342b52782f6936b07c287
+  languageName: node
+  linkType: hard
+
 "@babel/template@npm:^7.24.7, @babel/template@npm:^7.25.0, @babel/template@npm:^7.3.3":
   version: 7.25.0
   resolution: "@babel/template@npm:7.25.0"
@@ -2651,19 +2660,19 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@mui/icons-material@npm:^6.1.2":
-  version: 6.1.2
-  resolution: "@mui/icons-material@npm:6.1.2"
+"@mui/icons-material@npm:^6.1.5":
+  version: 6.1.5
+  resolution: "@mui/icons-material@npm:6.1.5"
   dependencies:
-    "@babel/runtime": "npm:^7.25.6"
+    "@babel/runtime": "npm:^7.25.7"
   peerDependencies:
-    "@mui/material": ^6.1.2
+    "@mui/material": ^6.1.5
     "@types/react": ^17.0.0 || ^18.0.0 || ^19.0.0
     react: ^17.0.0 || ^18.0.0 || ^19.0.0
   peerDependenciesMeta:
     "@types/react":
       optional: true
-  checksum: 10c0/ae5f1134e3ac45914c2bfef76a31848a8dc655237a9e478959580f778c31d77e6e54a588ec0ec552d8c6a904298f02d7cf482a5d6df294389d9ea9da8109ef94
+  checksum: 10c0/112f7570b8d27019a16b619a3a5b9f01cb7d8a244d50014596e17f06ed5f569888aeac2223c058da37567b5a358c99a53ee2afdf8958bc4a34b964a02f796787
   languageName: node
   linkType: hard
 
@@ -14095,7 +14104,7 @@ __metadata:
     "@emotion/react": "npm:^11.13.3"
     "@emotion/styled": "npm:^11.13.0"
     "@fingerprintjs/botd": "npm:^1.9.1"
-    "@mui/icons-material": "npm:^6.1.2"
+    "@mui/icons-material": "npm:^6.1.5"
     "@mui/material": "npm:^6.1.3"
     "@testing-library/dom": "npm:^10.4.0"
     "@testing-library/jest-dom": "npm:^6.5.0"
