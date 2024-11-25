@@ -5,7 +5,7 @@
   "private": true,
   "dependencies": {
     "@babel/core": "^7.26.0",
-    "@emotion/react": "^11.13.3",
+    "@emotion/react": "^11.13.5",
     "@emotion/styled": "^11.13.0",
     "@fingerprintjs/botd": "^1.9.1",
     "@mui/icons-material": "^6.1.6",
