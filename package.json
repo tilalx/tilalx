@@ -9,7 +9,7 @@
     "@emotion/styled": "^11.13.0",
     "@fingerprintjs/botd": "^1.9.1",
     "@mui/icons-material": "^6.1.9",
-    "@mui/material": "^6.1.6",
+    "@mui/material": "^6.1.9",
     "@types/react": "^18.3.12",
     "axios": "^1.7.7",
     "react": "18.3.1",
