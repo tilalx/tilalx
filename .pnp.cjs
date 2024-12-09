@@ -45,7 +45,7 @@ const RAW_RUNTIME_STATE =
           ["react-markdown", "virtual:75652d88318fd0933c149eb6e41917989817acd38fd9a789aa4cc00e2b3d3f84f6e6894afb8d1fcd94c5d9b78b8722ab49c36f7f1968174b79f47981fd324101#npm:9.0.1"],\
           ["react-router-dom", "virtual:75652d88318fd0933c149eb6e41917989817acd38fd9a789aa4cc00e2b3d3f84f6e6894afb8d1fcd94c5d9b78b8722ab49c36f7f1968174b79f47981fd324101#npm:7.0.1"],\
           ["react-scripts", "virtual:75652d88318fd0933c149eb6e41917989817acd38fd9a789aa4cc00e2b3d3f84f6e6894afb8d1fcd94c5d9b78b8722ab49c36f7f1968174b79f47981fd324101#npm:5.0.1"],\
-          ["sass", "npm:1.81.1"],\
+          ["sass", "npm:1.82.0"],\
           ["web-vitals", "npm:4.2.4"]\
         ],\
         "linkType": "SOFT"\
@@ -17625,10 +17625,10 @@ const RAW_RUNTIME_STATE =
       }]\
     ]],\
     ["sass", [\
-      ["npm:1.81.1", {\
-        "packageLocation": "../../.yarn/berry/cache/sass-npm-1.81.1-45a2ba3834-10c0.zip/node_modules/sass/",\
+      ["npm:1.82.0", {\
+        "packageLocation": "../../.yarn/berry/cache/sass-npm-1.82.0-091deac1e0-10c0.zip/node_modules/sass/",\
         "packageDependencies": [\
-          ["sass", "npm:1.81.1"],\
+          ["sass", "npm:1.82.0"],\
           ["@parcel/watcher", "npm:2.4.1"],\
           ["chokidar", "npm:4.0.0"],\
           ["immutable", "npm:5.0.3"],\
@@ -18909,7 +18909,7 @@ const RAW_RUNTIME_STATE =
           ["react-markdown", "virtual:75652d88318fd0933c149eb6e41917989817acd38fd9a789aa4cc00e2b3d3f84f6e6894afb8d1fcd94c5d9b78b8722ab49c36f7f1968174b79f47981fd324101#npm:9.0.1"],\
           ["react-router-dom", "virtual:75652d88318fd0933c149eb6e41917989817acd38fd9a789aa4cc00e2b3d3f84f6e6894afb8d1fcd94c5d9b78b8722ab49c36f7f1968174b79f47981fd324101#npm:7.0.1"],\
           ["react-scripts", "virtual:75652d88318fd0933c149eb6e41917989817acd38fd9a789aa4cc00e2b3d3f84f6e6894afb8d1fcd94c5d9b78b8722ab49c36f7f1968174b79f47981fd324101#npm:5.0.1"],\
-          ["sass", "npm:1.81.1"],\
+          ["sass", "npm:1.82.0"],\
           ["web-vitals", "npm:4.2.4"]\
         ],\
         "linkType": "SOFT"\
