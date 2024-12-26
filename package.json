@@ -10,7 +10,7 @@
     "@fingerprintjs/botd": "^1.9.1",
     "@mui/icons-material": "^6.3.0",
     "@mui/material": "^6.2.0",
-    "@types/react": "^19.0.1",
+    "@types/react": "^19.0.2",
     "axios": "^1.7.9",
     "react": "19.0.0",
     "react-dom": "19.0.0",
