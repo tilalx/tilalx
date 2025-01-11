@@ -31,7 +31,7 @@ const RAW_RUNTIME_STATE =
           ["@emotion/react", "virtual:75652d88318fd0933c149eb6e41917989817acd38fd9a789aa4cc00e2b3d3f84f6e6894afb8d1fcd94c5d9b78b8722ab49c36f7f1968174b79f47981fd324101#npm:11.14.0"],\
           ["@emotion/styled", "virtual:75652d88318fd0933c149eb6e41917989817acd38fd9a789aa4cc00e2b3d3f84f6e6894afb8d1fcd94c5d9b78b8722ab49c36f7f1968174b79f47981fd324101#npm:11.14.0"],\
           ["@fingerprintjs/botd", "npm:1.9.1"],\
-          ["@mui/icons-material", "virtual:75652d88318fd0933c149eb6e41917989817acd38fd9a789aa4cc00e2b3d3f84f6e6894afb8d1fcd94c5d9b78b8722ab49c36f7f1968174b79f47981fd324101#npm:6.3.0"],\
+          ["@mui/icons-material", "virtual:75652d88318fd0933c149eb6e41917989817acd38fd9a789aa4cc00e2b3d3f84f6e6894afb8d1fcd94c5d9b78b8722ab49c36f7f1968174b79f47981fd324101#npm:6.3.1"],\
           ["@mui/material", "virtual:75652d88318fd0933c149eb6e41917989817acd38fd9a789aa4cc00e2b3d3f84f6e6894afb8d1fcd94c5d9b78b8722ab49c36f7f1968174b79f47981fd324101#npm:6.3.0"],\
           ["@testing-library/dom", "npm:10.4.0"],\
           ["@testing-library/jest-dom", "npm:6.6.3"],\
@@ -4506,17 +4506,17 @@ const RAW_RUNTIME_STATE =
       }]\
     ]],\
     ["@mui/icons-material", [\
-      ["npm:6.3.0", {\
-        "packageLocation": "../../.yarn/berry/cache/@mui-icons-material-npm-6.3.0-67850cb0f2-10c0.zip/node_modules/@mui/icons-material/",\
+      ["npm:6.3.1", {\
+        "packageLocation": "../../.yarn/berry/cache/@mui-icons-material-npm-6.3.1-497a87ad71-10c0.zip/node_modules/@mui/icons-material/",\
         "packageDependencies": [\
-          ["@mui/icons-material", "npm:6.3.0"]\
+          ["@mui/icons-material", "npm:6.3.1"]\
         ],\
         "linkType": "SOFT"\
       }],\
-      ["virtual:75652d88318fd0933c149eb6e41917989817acd38fd9a789aa4cc00e2b3d3f84f6e6894afb8d1fcd94c5d9b78b8722ab49c36f7f1968174b79f47981fd324101#npm:6.3.0", {\
-        "packageLocation": "./.yarn/__virtual__/@mui-icons-material-virtual-10d62253eb/3/.yarn/berry/cache/@mui-icons-material-npm-6.3.0-67850cb0f2-10c0.zip/node_modules/@mui/icons-material/",\
+      ["virtual:75652d88318fd0933c149eb6e41917989817acd38fd9a789aa4cc00e2b3d3f84f6e6894afb8d1fcd94c5d9b78b8722ab49c36f7f1968174b79f47981fd324101#npm:6.3.1", {\
+        "packageLocation": "./.yarn/__virtual__/@mui-icons-material-virtual-f0b60489e0/3/.yarn/berry/cache/@mui-icons-material-npm-6.3.1-497a87ad71-10c0.zip/node_modules/@mui/icons-material/",\
         "packageDependencies": [\
-          ["@mui/icons-material", "virtual:75652d88318fd0933c149eb6e41917989817acd38fd9a789aa4cc00e2b3d3f84f6e6894afb8d1fcd94c5d9b78b8722ab49c36f7f1968174b79f47981fd324101#npm:6.3.0"],\
+          ["@mui/icons-material", "virtual:75652d88318fd0933c149eb6e41917989817acd38fd9a789aa4cc00e2b3d3f84f6e6894afb8d1fcd94c5d9b78b8722ab49c36f7f1968174b79f47981fd324101#npm:6.3.1"],\
           ["@babel/runtime", "npm:7.26.0"],\
           ["@mui/material", "virtual:75652d88318fd0933c149eb6e41917989817acd38fd9a789aa4cc00e2b3d3f84f6e6894afb8d1fcd94c5d9b78b8722ab49c36f7f1968174b79f47981fd324101#npm:6.3.0"],\
           ["@types/mui__material", null],\
@@ -18828,7 +18828,7 @@ const RAW_RUNTIME_STATE =
           ["@emotion/react", "virtual:75652d88318fd0933c149eb6e41917989817acd38fd9a789aa4cc00e2b3d3f84f6e6894afb8d1fcd94c5d9b78b8722ab49c36f7f1968174b79f47981fd324101#npm:11.14.0"],\
           ["@emotion/styled", "virtual:75652d88318fd0933c149eb6e41917989817acd38fd9a789aa4cc00e2b3d3f84f6e6894afb8d1fcd94c5d9b78b8722ab49c36f7f1968174b79f47981fd324101#npm:11.14.0"],\
           ["@fingerprintjs/botd", "npm:1.9.1"],\
-          ["@mui/icons-material", "virtual:75652d88318fd0933c149eb6e41917989817acd38fd9a789aa4cc00e2b3d3f84f6e6894afb8d1fcd94c5d9b78b8722ab49c36f7f1968174b79f47981fd324101#npm:6.3.0"],\
+          ["@mui/icons-material", "virtual:75652d88318fd0933c149eb6e41917989817acd38fd9a789aa4cc00e2b3d3f84f6e6894afb8d1fcd94c5d9b78b8722ab49c36f7f1968174b79f47981fd324101#npm:6.3.1"],\
           ["@mui/material", "virtual:75652d88318fd0933c149eb6e41917989817acd38fd9a789aa4cc00e2b3d3f84f6e6894afb8d1fcd94c5d9b78b8722ab49c36f7f1968174b79f47981fd324101#npm:6.3.0"],\
           ["@testing-library/dom", "npm:10.4.0"],\
           ["@testing-library/jest-dom", "npm:6.6.3"],\
