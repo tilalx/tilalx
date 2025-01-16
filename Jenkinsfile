@@ -58,19 +58,14 @@ pipeline {
                 }
             }
         }
-
-        stage('Cleanup') {
-            steps {
-                script {
-                    def builderName = "builder-${env.BUILD_ID}-${env.BRANCH_NAME}"
-                    sh "docker buildx rm ${builderName}"
-                }
-            }
-        }
     }
 
     post {
         always {
+            script {
+                def builderName = "builder-${env.BUILD_ID}-${env.BRANCH_NAME}"
+                sh "docker buildx rm ${builderName}"
+            }
             cleanWs() // Clean workspace after each build
         }
     }
