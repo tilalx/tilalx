@@ -7,6 +7,8 @@ WORKDIR /app
 # Set the Yarn version to Berry
 RUN yarn set version berry
 
+RUN corepack enable
+
 # Copy the entire project directory into the container
 COPY . .
 
