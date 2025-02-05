@@ -1,3 +1,6 @@
+@use "sass:math";
+@use "sass:string";
+
 $starFieldWidth: 2560;
 $starFieldHeight: 2560;
 $starStartOffset: 600px;
@@ -22,8 +25,8 @@ html {
 .main-container {
   display: block;
   position: relative;
-  width: 1200px;
-  height: 600px;
+  width: 100%;
+  height: 100vh;
   background: linear-gradient(to bottom, #201c2f 0%, #100751 100%);
   top: 50%;
   left: 50%;
@@ -31,12 +34,12 @@ html {
 }
 
 @function create-stars($n) {
-  $stars: "#{random($starFieldWidth)}px #{random($starFieldHeight)}px #FFF";
+  $stars: "#{math.random($starFieldWidth)}px #{math.random($starFieldHeight)}px #FFF";
 
   @for $i from 2 through $n {
-    $stars: "#{$stars} , #{random($starFieldWidth)}px #{random($starFieldHeight)}px #FFF";
+    $stars: "#{$stars} , #{math.random($starFieldWidth)}px #{math.random($starFieldHeight)}px #FFF";
   }
-  @return unquote($stars);
+  @return string.unquote($stars);
 }
 
 @mixin star-template($numStars, $starSize, $scrollSpeed) {
@@ -48,6 +51,7 @@ html {
   box-shadow: create-stars($numStars);
   opacity: 0.1;
   animation: animStar $scrollSpeed linear infinite;
+  
   &:after {
     content: " ";
     top: -$starStartOffset;
@@ -112,4 +116,23 @@ html {
     opacity: 0.3;
     height: 800px;
   }
+}
+
+.markdown-info {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  width: 100%;
+  max-width: 800px; // Adjust based on your layout preference
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.markdown-info h1, 
+.markdown-info h2, 
+.markdown-info h3, 
+.markdown-info p {
+  text-align: center;
 }

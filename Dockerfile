@@ -1,4 +1,4 @@
-# Use the official Node.js 22 image as the base image for the build stage
+# Use the official Node.js 23 image as the base image for the build stage
 FROM node:23 AS builder
 
 # Set the working directory inside the container
@@ -22,7 +22,7 @@ RUN yarn build
 FROM nginx:1.27
 
 # Copy the build output from the builder stage to the Nginx HTML directory
-COPY --from=builder /app/build /usr/share/nginx/html
+COPY --from=builder /app/dist /usr/share/nginx/html
 
 # Expose port 80 for the Nginx server
 EXPOSE 80
