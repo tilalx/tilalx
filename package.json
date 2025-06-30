@@ -16,7 +16,7 @@
     "react-ga4": "^2.1.0",
     "react-markdown": "^10.1.0",
     "react-router-dom": "^7.3.0",
-    "sass": "^1.85.0",
+    "sass": "^1.89.2",
     "typescript": "^5.8.2",
     "web-vitals": "^4.2.4"
   },
