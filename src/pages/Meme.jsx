@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback } from "react";
+// src/MemePage.js
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   Button,
   Input,
@@ -8,6 +9,7 @@ import {
 } from "@mui/material";
 import { styled } from "@mui/material/styles";
 
+// --- Styled Components ---
 const MemeContainer = styled("div")(({ theme }) => ({
   display: "flex",
   flexDirection: "column",
@@ -23,9 +25,9 @@ const MemeImageContainer = styled("div")({
   border: "1px solid #ddd",
   borderRadius: 4,
   padding: 10,
-  width: "80%", // Set a maximum width
-  maxHeight: "60vh", // Set a maximum height
-  overflow: "hidden", // Hide overflow
+  width: "80%",
+  maxHeight: "60vh",
+  overflow: "hidden",
   display: "flex",
   justifyContent: "center",
 });
@@ -34,7 +36,7 @@ const MemeImage = styled("img")({
   maxWidth: "100%",
   maxHeight: "100%",
   display: "block",
-  objectFit: "contain", // Ensure the image is scaled correctly
+  objectFit: "contain",
 });
 
 const ButtonsContainer = styled("div")({
@@ -42,7 +44,7 @@ const ButtonsContainer = styled("div")({
   flexDirection: "column",
   alignItems: "center",
   gap: 10,
-  marginBottom: 20, // Add some space at the bottom
+  marginBottom: 20,
 });
 
 const IntervalForm = styled("form")({
@@ -51,62 +53,76 @@ const IntervalForm = styled("form")({
   gap: 10,
 });
 
+// --- Main Component ---
 const MemePage = () => {
   const [memeUrl, setMemeUrl] = useState("");
-  const [intervalId, setIntervalId] = useState(null);
   const [intervalSeconds, setIntervalSeconds] = useState(10);
+  const intervalRef = useRef(null);
 
+  // Theme setup
   const prefersDarkMode = useMediaQuery("(prefers-color-scheme: dark)");
-
   const theme = React.useMemo(
     () =>
       createTheme({
-        palette: {
-          mode: prefersDarkMode ? "dark" : "light",
-        },
+        palette: { mode: prefersDarkMode ? "dark" : "light" },
       }),
     [prefersDarkMode]
   );
 
+  // Fetch a random meme
   const loadMeme = useCallback(async () => {
     try {
       const res = await fetch("https://meme-api.aelx.de/gimme");
       const data = await res.json();
       setMemeUrl(data.url);
-    } catch (error) {
-      console.error(error);
-      replaceWithPlaceholder();
+    } catch {
+      // fallback image on error
+      setMemeUrl("images/error.jpg");
     }
   }, []);
 
+  // Start auto-loading memes every `secs` seconds
   const startAutoLoad = useCallback(
-    (seconds) => {
+    (secs) => {
+      // clear any existing timer
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+      // load immediately, then schedule
       loadMeme();
-      const id = setInterval(loadMeme, seconds * 1000);
-      setIntervalId(id);
+      intervalRef.current = setInterval(loadMeme, secs * 1000);
     },
     [loadMeme]
   );
 
+  // Stop the auto-loading timer
   const stopAutoLoad = useCallback(() => {
-    clearInterval(intervalId);
-  }, [intervalId]);
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+  }, []);
 
+  // Handle the form submit to (re)start auto-loading
   const handleIntervalFormSubmit = useCallback(
     (e) => {
       e.preventDefault();
-      startAutoLoad(intervalSeconds);
+      // ensure a valid number ≥ 1
+      const secs = Math.max(1, Number(intervalSeconds) || 1);
+      startAutoLoad(secs);
     },
-    [startAutoLoad, intervalSeconds]
+    [intervalSeconds, startAutoLoad]
   );
 
-  const replaceWithPlaceholder = () => {
-    setMemeUrl("images/error.jpg");
-  };
-
+  // Initial load & cleanup on unmount
   useEffect(() => {
     document.title = "Meme - PersonalPage";
-    loadMeme()
+    loadMeme();
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
   }, [loadMeme]);
 
   return (
@@ -114,10 +130,9 @@ const MemePage = () => {
       <MemeContainer>
         <MemeImageContainer>
           <MemeImage
-            id="meme"
             src={memeUrl}
-            alt="Loading..."
-            onError={replaceWithPlaceholder}
+            alt="Random Meme"
+            onError={() => setMemeUrl("images/error.jpg")}
           />
         </MemeImageContainer>
 
@@ -140,7 +155,6 @@ const MemePage = () => {
               Start Auto Load
             </Button>
             <Button
-              id="stop-btn"
               type="button"
               variant="contained"
               color="secondary"
