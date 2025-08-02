@@ -19,7 +19,7 @@ RUN yarn install
 RUN yarn build
 
 # Use the official Nginx image as the base image for the runtime stage
-FROM nginx:1.27
+FROM nginx:1.29
 
 # Copy the build output from the builder stage to the Nginx HTML directory
 COPY --from=builder /app/dist /usr/share/nginx/html
