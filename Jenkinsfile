@@ -54,7 +54,7 @@ pipeline {
 
                     // Build and push the Docker image.
                     sh """
-                        docker buildx build --platform linux/amd64,linux/arm64 --build-arg DOCKER_BUILDKIT=${env.DOCKER_BUILDKIT} \
+                        docker buildx build --platform linux/amd64 --build-arg DOCKER_BUILDKIT=${env.DOCKER_BUILDKIT} \
                           -t ${env.IMAGE_NAME}:${tagName} --push .
                     """
                 }
