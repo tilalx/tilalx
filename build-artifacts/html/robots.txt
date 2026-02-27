@@ -1,0 +1,27 @@
+# https://www.robotstxt.org/robotstxt.html
+User-agent: *
+Allow: /
+
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Disallow: /
+
+User-agent: DuckDuckGoBot
+Allow: /
+
+User-agent: Baiduspider
+Disallow: /
+
+User-agent: Yandex
+Disallow: /
+
+User-agent: Yahoo Slurp
+Disallow: /
+
+User-agent: Archive.org_bot
+Disallow: /
+
+User-agent: ia_archiver
+Disallow: /
