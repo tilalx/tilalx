@@ -1,7 +1,5 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
-import axios from "axios";
-import { detectBot } from "../components/botdService";
 import "../Home.scss";
 
 const MarkdownPage = () => {
@@ -10,20 +8,10 @@ const MarkdownPage = () => {
   useEffect(() => {
     document.title = "Home - PersonalPage";
 
-    const fetchData = async () => {
-      const botResult = await detectBot();
-      
-      if (botResult && (botResult.bot.automationTool || botResult.bot.browserSpoofing)) {
-        console.log('Bot detected, content not loaded');
-        return;
-      }
-
-      axios.get("https://raw.githubusercontent.com/tilalx/tilalx/main/ReadMe.md")
-        .then((response) => setMarkdown(response.data))
-        .catch((error) => console.error("Error fetching Markdown content:", error));
-    };
-
-    fetchData();
+    fetch("https://raw.githubusercontent.com/tilalx/tilalx/main/ReadMe.md")
+      .then((response) => response.text())
+      .then((text) => setMarkdown(text))
+      .catch((error) => console.error("Error fetching Markdown content:", error));
   }, []);
 
   return (

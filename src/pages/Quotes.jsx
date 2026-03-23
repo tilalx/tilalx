@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardActions, Typography, Button, Box } from '@mui/material';
 
 const Quotes = () => {
@@ -38,7 +38,7 @@ const Quotes = () => {
         </CardActions>
       </Card>
     </Box>
-  );  
+  );
 };
 
 export default Quotes;

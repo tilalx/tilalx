@@ -1,5 +1,4 @@
-// src/MemePage.js
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import {
   Button,
   Input,
@@ -9,7 +8,6 @@ import {
 } from "@mui/material";
 import { styled } from "@mui/material/styles";
 
-// --- Styled Components ---
 const MemeContainer = styled("div")(({ theme }) => ({
   display: "flex",
   flexDirection: "column",
@@ -53,15 +51,13 @@ const IntervalForm = styled("form")({
   gap: 10,
 });
 
-// --- Main Component ---
 const MemePage = () => {
   const [memeUrl, setMemeUrl] = useState("");
   const [intervalSeconds, setIntervalSeconds] = useState(10);
   const intervalRef = useRef(null);
 
-  // Theme setup
   const prefersDarkMode = useMediaQuery("(prefers-color-scheme: dark)");
-  const theme = React.useMemo(
+  const theme = useMemo(
     () =>
       createTheme({
         palette: { mode: prefersDarkMode ? "dark" : "light" },
@@ -69,33 +65,27 @@ const MemePage = () => {
     [prefersDarkMode]
   );
 
-  // Fetch a random meme
   const loadMeme = useCallback(async () => {
     try {
       const res = await fetch("https://meme-api.aelx.de/gimme");
       const data = await res.json();
       setMemeUrl(data.url);
     } catch {
-      // fallback image on error
       setMemeUrl("images/error.jpg");
     }
   }, []);
 
-  // Start auto-loading memes every `secs` seconds
   const startAutoLoad = useCallback(
     (secs) => {
-      // clear any existing timer
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
       }
-      // load immediately, then schedule
       loadMeme();
       intervalRef.current = setInterval(loadMeme, secs * 1000);
     },
     [loadMeme]
   );
 
-  // Stop the auto-loading timer
   const stopAutoLoad = useCallback(() => {
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
@@ -103,18 +93,15 @@ const MemePage = () => {
     }
   }, []);
 
-  // Handle the form submit to (re)start auto-loading
   const handleIntervalFormSubmit = useCallback(
     (e) => {
       e.preventDefault();
-      // ensure a valid number ≥ 1
       const secs = Math.max(1, Number(intervalSeconds) || 1);
       startAutoLoad(secs);
     },
     [intervalSeconds, startAutoLoad]
   );
 
-  // Initial load & cleanup on unmount
   useEffect(() => {
     document.title = "Meme - PersonalPage";
     loadMeme();
