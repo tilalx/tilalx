@@ -2547,10 +2547,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-ga4@npm:^2.1.0":
-  version: 2.1.0
-  resolution: "react-ga4@npm:2.1.0"
-  checksum: 10c0/314aa86dd7cb868535f26bfb8b537d3b3c20649c66b2b942fba72e081295441446932a4ae96499231c8a4836ab0a222a97b1bd03633b8cc1477991efe93444cd
+"react-ga4@npm:^3.0.1":
+  version: 3.0.1
+  resolution: "react-ga4@npm:3.0.1"
+  checksum: 10c0/b50437101057faf3ba1dff3e5646f0f5111731f7b752a6031b7ac4088306e6afa2629397fa208370e6c0d108cb42a7925c17a924354f9556e5d278b96f3617dc
   languageName: node
   linkType: hard
 
@@ -3013,7 +3013,7 @@ __metadata:
     "@vitejs/plugin-react": "npm:^6.0.1"
     react: "npm:^19.2.4"
     react-dom: "npm:^19.2.4"
-    react-ga4: "npm:^2.1.0"
+    react-ga4: "npm:^3.0.1"
     react-markdown: "npm:^10.1.0"
     react-router-dom: "npm:^7.13.2"
     sass: "npm:^1.98.0"
