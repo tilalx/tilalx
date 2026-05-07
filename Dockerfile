@@ -1,5 +1,5 @@
 # Use the official Node.js 25 image as the base image for the build stage
-FROM node:25 AS builder
+FROM node:26 AS builder
 
 # Set the working directory inside the container
 WORKDIR /app
