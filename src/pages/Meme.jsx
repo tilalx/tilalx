@@ -1,159 +1,211 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
+  Box,
+  Container,
+  Typography,
+  Paper,
   Button,
-  Input,
-  createTheme,
-  ThemeProvider,
-  useMediaQuery,
+  ButtonGroup,
+  Skeleton,
+  Divider,
+  useTheme,
 } from "@mui/material";
-import { styled } from "@mui/material/styles";
 
-const MemeContainer = styled("div")(({ theme }) => ({
-  display: "flex",
-  flexDirection: "column",
-  justifyContent: "space-between",
-  alignItems: "center",
-  padding: theme.spacing(2),
-  backgroundColor: theme.palette.background.paper,
-  height: "100vh",
-  boxSizing: "border-box",
-}));
+const preloadImage = (url) =>
+  new Promise((resolve) => {
+    const img = new window.Image();
+    img.onload = () => resolve(url);
+    img.onerror = () => resolve("images/error.jpg");
+    img.src = url;
+  });
 
-const MemeImageContainer = styled("div")({
-  border: "1px solid #ddd",
-  borderRadius: 4,
-  padding: 10,
-  width: "80%",
-  maxHeight: "60vh",
-  overflow: "hidden",
-  display: "flex",
-  justifyContent: "center",
-});
-
-const MemeImage = styled("img")({
-  maxWidth: "100%",
-  maxHeight: "100%",
-  display: "block",
-  objectFit: "contain",
-});
-
-const ButtonsContainer = styled("div")({
-  display: "flex",
-  flexDirection: "column",
-  alignItems: "center",
-  gap: 10,
-  marginBottom: 20,
-});
-
-const IntervalForm = styled("form")({
-  display: "flex",
-  alignItems: "center",
-  gap: 10,
-});
-
-const MemePage = () => {
+const Meme = () => {
   const [memeUrl, setMemeUrl] = useState("");
+  const [initialLoad, setInitialLoad] = useState(true);
   const [intervalSeconds, setIntervalSeconds] = useState(10);
+  const [autoRunning, setAutoRunning] = useState(false);
   const intervalRef = useRef(null);
+  const fetchAndSwapRef = useRef(null);
+  const theme = useTheme();
+  const dark = theme.palette.mode === "dark";
 
-  const prefersDarkMode = useMediaQuery("(prefers-color-scheme: dark)");
-  const theme = useMemo(
-    () =>
-      createTheme({
-        palette: { mode: prefersDarkMode ? "dark" : "light" },
-      }),
-    [prefersDarkMode]
-  );
-
-  const loadMeme = useCallback(async () => {
+  const fetchAndSwap = useCallback(async (silent = false) => {
+    if (!silent) setInitialLoad(true);
     try {
       const res = await fetch("https://meme-api.aelx.de/gimme");
       const data = await res.json();
-      setMemeUrl(data.url);
+      const readyUrl = await preloadImage(data.url);
+      setMemeUrl(readyUrl);
     } catch {
       setMemeUrl("images/error.jpg");
+    } finally {
+      if (!silent) setInitialLoad(false);
     }
   }, []);
 
-  const startAutoLoad = useCallback(
-    (secs) => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-      loadMeme();
-      intervalRef.current = setInterval(loadMeme, secs * 1000);
-    },
-    [loadMeme]
-  );
+  fetchAndSwapRef.current = fetchAndSwap;
+
+  const restartInterval = useCallback((secs) => {
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    intervalRef.current = setInterval(
+      () => fetchAndSwapRef.current(true),
+      Math.max(1, secs) * 1000
+    );
+  }, []);
+
+  const startAutoLoad = useCallback(() => {
+    fetchAndSwap(memeUrl !== "");
+    restartInterval(intervalSeconds);
+    setAutoRunning(true);
+  }, [fetchAndSwap, restartInterval, intervalSeconds, memeUrl]);
 
   const stopAutoLoad = useCallback(() => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
+    if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null; }
+    setAutoRunning(false);
   }, []);
 
-  const handleIntervalFormSubmit = useCallback(
-    (e) => {
-      e.preventDefault();
-      const secs = Math.max(1, Number(intervalSeconds) || 1);
-      startAutoLoad(secs);
-    },
-    [intervalSeconds, startAutoLoad]
-  );
+  useEffect(() => {
+    if (autoRunning) restartInterval(intervalSeconds);
+  }, [intervalSeconds, autoRunning, restartInterval]);
 
   useEffect(() => {
-    document.title = "Meme - PersonalPage";
-    loadMeme();
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-    };
-  }, [loadMeme]);
+    fetchAndSwap(false);
+    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
+  }, [fetchAndSwap]);
+
+  const stepBtn = {
+    minWidth: 32,
+    width: 32,
+    height: 32,
+    p: 0,
+    fontWeight: 700,
+    fontSize: "1rem",
+    lineHeight: 1,
+    border: `1px solid ${theme.palette.divider}`,
+    color: "text.secondary",
+    "&:hover": { color: "text.primary", borderColor: "text.secondary", bgcolor: dark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.05)" },
+  };
 
   return (
-    <ThemeProvider theme={theme}>
-      <MemeContainer>
-        <MemeImageContainer>
-          <MemeImage
-            src={memeUrl}
-            alt="Random Meme"
-            onError={() => setMemeUrl("images/error.jpg")}
-          />
-        </MemeImageContainer>
+    <Box sx={{ bgcolor: "background.default", minHeight: "calc(100vh - 56px)", py: { xs: 3, md: 5 } }}>
+      <Container maxWidth="md">
 
-        <ButtonsContainer>
-          <Button variant="contained" color="primary" onClick={loadMeme}>
-            Load New Meme
-          </Button>
+        <Box sx={{ mb: 3 }}>
+          <Typography variant="overline" sx={{ color: "primary.main", fontWeight: 600, letterSpacing: "0.1em", fontSize: "0.75rem" }}>
+            Random
+          </Typography>
+          <Typography variant="h4" sx={{ mt: 0.5, color: "text.primary" }}>
+            Meme of the moment
+          </Typography>
+        </Box>
 
-          <IntervalForm onSubmit={handleIntervalFormSubmit}>
-            <label htmlFor="interval-input">Auto Load Every:</label>
-            <Input
-              type="number"
-              id="interval-input"
-              min="1"
-              value={intervalSeconds}
-              onChange={(e) => setIntervalSeconds(e.target.value)}
-            />
-            <span>seconds</span>
-            <Button type="submit" variant="contained" color="primary">
-              Start Auto Load
-            </Button>
+        <Paper
+          elevation={0}
+          sx={{ border: `1px solid ${theme.palette.divider}`, borderRadius: 3, overflow: "hidden", bgcolor: "background.paper" }}
+        >
+          {/* Image */}
+          <Box
+            sx={{
+              height: "calc(100vh - 280px)",
+              minHeight: 240,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              bgcolor: dark ? "#0a0a0a" : "#f4f4f5",
+            }}
+          >
+            {initialLoad ? (
+              <Skeleton variant="rectangular" sx={{ width: "100%", height: "100%", bgcolor: dark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)" }} />
+            ) : (
+              <Box
+                component="img"
+                src={memeUrl}
+                alt="Random meme"
+                onError={() => setMemeUrl("images/error.jpg")}
+                sx={{ display: "block", maxWidth: "100%", maxHeight: "100%", width: "auto", height: "auto", objectFit: "contain", transition: "opacity 0.18s ease" }}
+              />
+            )}
+          </Box>
+
+          <Divider sx={{ borderColor: "divider" }} />
+
+          {/* Controls */}
+          <Box sx={{ px: 3, py: 2, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 2, flexWrap: "wrap" }}>
+
+            {/* Left: auto-play */}
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+
+              {/* Play / Stop toggle */}
+              <Button
+                variant={autoRunning ? "contained" : "outlined"}
+                color={autoRunning ? "error" : "inherit"}
+                disableElevation
+                onClick={autoRunning ? stopAutoLoad : startAutoLoad}
+                sx={{
+                  minWidth: 40,
+                  width: 40,
+                  height: 36,
+                  p: 0,
+                  fontSize: "1rem",
+                  lineHeight: 1,
+                  border: autoRunning ? undefined : `1px solid ${theme.palette.divider}`,
+                  color: autoRunning ? undefined : "text.secondary",
+                  "&:hover": autoRunning ? {} : { borderColor: "text.secondary", color: "text.primary" },
+                }}
+              >
+                {autoRunning ? "■" : "▶"}
+              </Button>
+
+              <Typography variant="body2" sx={{ color: "text.secondary" }}>
+                every
+              </Typography>
+
+              {/* Interval stepper */}
+              <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+                <Button disableElevation onClick={() => setIntervalSeconds((s) => Math.max(1, s - 1))} sx={stepBtn}>▼</Button>
+                <Typography
+                  variant="body2"
+                  sx={{ fontWeight: 700, minWidth: 36, textAlign: "center", color: "text.primary", fontVariantNumeric: "tabular-nums", userSelect: "none" }}
+                >
+                  {intervalSeconds}s
+                </Typography>
+                <Button disableElevation onClick={() => setIntervalSeconds((s) => s + 1)} sx={stepBtn}>▲</Button>
+              </Box>
+
+              {/* Live indicator */}
+              {autoRunning && (
+                <Box
+                  sx={{
+                    width: 7,
+                    height: 7,
+                    borderRadius: "50%",
+                    bgcolor: "#22c55e",
+                    boxShadow: "0 0 0 3px rgba(34,197,94,0.2)",
+                    animation: "livePulse 1.8s ease-in-out infinite",
+                    "@keyframes livePulse": {
+                      "0%,100%": { boxShadow: "0 0 0 3px rgba(34,197,94,0.2)" },
+                      "50%": { boxShadow: "0 0 0 6px rgba(34,197,94,0.05)" },
+                    },
+                  }}
+                />
+              )}
+            </Box>
+
+            {/* Right: next */}
             <Button
-              type="button"
               variant="contained"
-              color="secondary"
-              onClick={stopAutoLoad}
+              disableElevation
+              onClick={() => fetchAndSwap(false)}
+              disabled={initialLoad}
+              sx={{ fontWeight: 600, bgcolor: "primary.main", "&:hover": { bgcolor: "#4f46e5" }, px: 3 }}
             >
-              Stop Auto Load
+              Next meme →
             </Button>
-          </IntervalForm>
-        </ButtonsContainer>
-      </MemeContainer>
-    </ThemeProvider>
+          </Box>
+        </Paper>
+      </Container>
+    </Box>
   );
 };
 
-export default MemePage;
+export default Meme;

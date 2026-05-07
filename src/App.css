@@ -2,6 +2,62 @@
   text-align: center;
 }
 
+/* SPA Navigation */
+.spa-nav {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background-color: #1a1a2e;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.spa-nav__tab {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #ccc;
+  padding: 8px 20px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+
+.spa-nav__tab:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.spa-nav__tab--active {
+  background: #00bcd4;
+  border-color: #00bcd4;
+  color: #fff;
+  font-weight: 600;
+}
+
+@media (prefers-color-scheme: light) {
+  .spa-nav {
+    background-color: #f0f4f8;
+    border-bottom: 1px solid #ddd;
+  }
+  .spa-nav__tab {
+    color: #555;
+    border-color: #bbb;
+  }
+  .spa-nav__tab:hover {
+    background: rgba(0, 0, 0, 0.05);
+    color: #000;
+  }
+  .spa-nav__tab--active {
+    background: #0969da;
+    border-color: #0969da;
+    color: #fff;
+  }
+}
+
 .App-logo {
   height: 40vmin;
   pointer-events: none;
