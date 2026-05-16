@@ -1,29 +1,31 @@
 import '@fontsource/inter/400.css'
 import '@fontsource/inter/500.css'
 import '@fontsource/inter/600.css'
-import '@fontsource/inter/700.css'
-import '@fontsource/inter/800.css'
 import './globals.css'
-import InitColorSchemeScript from '@mui/material/InitColorSchemeScript'
-import { Providers } from './providers'
-import Navbar from './Navbar'
 import Track from './Track'
 
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+}
+
 export const metadata = {
-  title: 'tilalx',
-  description: 'Personal Page',
+  title: 'tilalx.dev',
+  description: 'Personal page — Tilo Alexander',
+  icons: {
+    icon: '/favicon.svg',
+    shortcut: '/favicon.svg',
+  },
+  manifest: '/manifest.json',
 }
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en">
       <body>
-        <InitColorSchemeScript attribute="data-mui-color-scheme" />
-        <Providers>
-          <Track />
-          <Navbar />
-          <main>{children}</main>
-        </Providers>
+        <Track />
+        {children}
       </body>
     </html>
   )
