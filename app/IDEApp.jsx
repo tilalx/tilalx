@@ -890,16 +890,64 @@ export default function IDEApp({ initialQuote, initialMeme, repos, stack }) {
 
   const [memeUrl,     setMemeUrl]     = useState(initialMeme || '')
   const [memeLoading, setMemeLoading] = useState(!initialMeme)
+  const [nextMemeUrl, setNextMemeUrl] = useState('')
 
   const [quote,        setQuote]        = useState(initialQuote)
   const [quoteLoading, setQuoteLoading] = useState(!initialQuote)
+  const [nextQuote,    setNextQuote]    = useState(null)
 
   const [networkLog, setNetworkLog] = useState([])
   const addLog = useCallback((url, ok, ms) => {
     setNetworkLog(prev => [{ url, ok, ms }, ...prev].slice(0, 8))
   }, [])
 
+  // Silently fetches and pre-loads the next meme image into the queue.
+  const prefetchMeme = useCallback(async () => {
+    try {
+      const res  = await fetch('https://meme-api.aelx.de/gimme')
+      const data = await res.json()
+      const url  = data.url || ''
+      if (url) {
+        await new Promise(resolve => {
+          const img = new window.Image()
+          img.onload = img.onerror = () => resolve()
+          img.src = url
+        })
+        setNextMemeUrl(url)
+      }
+    } catch {}
+  }, [])
+
+  // Silently fetches the next quote into the queue.
+  const prefetchQuote = useCallback(async () => {
+    try {
+      const res  = await fetch('https://quotes.aelx.de/random?count=1', { cache: 'no-store' })
+      const data = await res.json()
+      if (data?.length > 0) {
+        setNextQuote({
+          content: stripQuotes(data[0].content),
+          author:  data[0].author,
+          tags:    parseTags(data[0].tags),
+        })
+      }
+    } catch {}
+  }, [])
+
+  const nextMemeUrlRef  = useRef(nextMemeUrl)
+  const nextQuoteRef    = useRef(nextQuote)
+  useEffect(() => { nextMemeUrlRef.current = nextMemeUrl }, [nextMemeUrl])
+  useEffect(() => { nextQuoteRef.current   = nextQuote   }, [nextQuote])
+
   const fetchMeme = useCallback(async () => {
+    const queued = nextMemeUrlRef.current
+    if (queued) {
+      // Instant swap — queued image is already loaded in browser cache
+      setNextMemeUrl('')
+      setMemeUrl(queued)
+      addLog('meme-api.aelx.de/gimme', true, 0)
+      prefetchMeme()
+      return
+    }
     setMemeLoading(true)
     const t = Date.now()
     try {
@@ -918,10 +966,19 @@ export default function IDEApp({ initialQuote, initialMeme, repos, stack }) {
       addLog('meme-api.aelx.de/gimme', false, Date.now() - t)
     } finally {
       setMemeLoading(false)
+      prefetchMeme()
     }
-  }, [addLog])
+  }, [addLog, prefetchMeme])
 
   const fetchQuote = useCallback(async () => {
+    const queued = nextQuoteRef.current
+    if (queued) {
+      setNextQuote(null)
+      setQuote(queued)
+      addLog('quotes.aelx.de/random', true, 0)
+      prefetchQuote()
+      return
+    }
     setQuoteLoading(true)
     const t = Date.now()
     try {
@@ -940,12 +997,15 @@ export default function IDEApp({ initialQuote, initialMeme, repos, stack }) {
       addLog('quotes.aelx.de/random', false, Date.now() - t)
     } finally {
       setQuoteLoading(false)
+      prefetchQuote()
     }
-  }, [addLog])
+  }, [addLog, prefetchQuote])
 
   useEffect(() => {
-    if (!initialMeme)  fetchMeme()
-    if (!initialQuote) fetchQuote()
+    const memeReady  = !!initialMeme
+    const quoteReady = !!initialQuote
+    if (!memeReady)  fetchMeme();  else prefetchMeme()
+    if (!quoteReady) fetchQuote(); else prefetchQuote()
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const breadcrumb = TABS.find(t => t.id === activeTab)?.label || 'README.md'
