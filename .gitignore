@@ -12,6 +12,8 @@
 # production
 /build
 /dist
+/.next
+next-env.d.ts
 
 # misc
 .DS_Store
