@@ -1,4 +1,4 @@
-'use client'
+
 
 import LivePreview from './LivePreview'
 

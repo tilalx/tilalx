@@ -7,11 +7,12 @@ import { IconChevron, IconFork, FileItemIcon } from './icons'
 import { SettingsSidebarHint } from './SettingsUI'
 
 const OUTLINE = [
-  { level: 'h1', text: "Hi, I'm Tilo Alexander" },
-  { level: 'h2', text: '## about'               },
-  { level: 'h2', text: '## stack'               },
-  { level: 'h2', text: '## repositories'        },
-  { level: 'h2', text: '## contact'             },
+  { level: 'h1', text: "Hi, I'm Tilo Alexander", anchor: null        },
+  { level: 'h2', text: '## about',               anchor: 'readme-about'          },
+  { level: 'h2', text: '## stack',               anchor: 'readme-stack'          },
+  { level: 'h2', text: '## repositories',        anchor: 'readme-repositories'   },
+  { level: 'h2', text: '## contributions',       anchor: 'readme-contributions'  },
+  { level: 'h2', text: '## contact',             anchor: 'readme-contact'        },
 ]
 
 const EXTENSIONS_BASE = [
@@ -163,7 +164,19 @@ function ExplorerPanel({ activeTab, openFile, onTabChange, onOpenFile, repos }) 
           Outline
         </div>
         {sections.outline && OUTLINE.map((item, i) => (
-          <div key={i} className={`ide-outline-item ${item.level}`}>
+          <div
+            key={i}
+            className={`ide-outline-item ${item.level}`}
+            style={{ cursor: 'pointer' }}
+            onClick={() => {
+              onTabChange('readme')
+              if (item.anchor) {
+                setTimeout(() => {
+                  document.getElementById(item.anchor)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                }, 50)
+              }
+            }}
+          >
             <span style={{ color: '#45475a', fontSize: 9, fontWeight: 700, flexShrink: 0 }}>{item.level.toUpperCase()}</span>
             <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.text}</span>
           </div>

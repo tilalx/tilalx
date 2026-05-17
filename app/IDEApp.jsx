@@ -95,7 +95,8 @@ export default function IDEApp({ initialQuote, initialMeme, repos, stack, fileCo
   const [openFile,     setOpenFile]     = useState(null)
   const [openFileLine, setOpenFileLine] = useState(null)
 
-  const ideRootRef = useRef(null)
+  const ideRootRef   = useRef(null)
+  const seenMemeUrls = useRef(new Set(initialMeme ? [initialMeme] : []))
 
   const [memeUrl,     setMemeUrl]     = useState(initialMeme || '')
   const [memeLoading, setMemeLoading] = useState(!initialMeme)
@@ -107,7 +108,7 @@ export default function IDEApp({ initialQuote, initialMeme, repos, stack, fileCo
 
   const [networkLog, setNetworkLog] = useState([])
   const addLog = useCallback((url, ok, ms) => {
-    setNetworkLog(prev => [{ url, ok, ms }, ...prev].slice(0, 8))
+    setNetworkLog(prev => [{ url, ok, ms }, ...prev].slice(0, 50))
   }, [])
 
   const [settings, setSettings] = useState(() => {
@@ -196,11 +197,26 @@ export default function IDEApp({ initialQuote, initialMeme, repos, stack, fileCo
     setTermInput('')
   }, [termInput, repos, stack, commits])
 
-  const prefetchMeme = useCallback(async () => {
-    try {
+  const fetchFreshMemeUrl = useCallback(async (maxRetries = 8) => {
+    for (let i = 0; i < maxRetries; i++) {
       const res  = await fetch('https://meme-api.aelx.de/gimme')
       const data = await res.json()
       const url  = data.url || ''
+      if (!url) continue
+      if (!seenMemeUrls.current.has(url)) {
+        seenMemeUrls.current.add(url)
+        if (seenMemeUrls.current.size > 50) {
+          seenMemeUrls.current.delete(seenMemeUrls.current.values().next().value)
+        }
+        return url
+      }
+    }
+    return null
+  }, [])
+
+  const prefetchMeme = useCallback(async () => {
+    try {
+      const url = await fetchFreshMemeUrl()
       if (url) {
         await new Promise(resolve => {
           const img = new window.Image()
@@ -210,7 +226,7 @@ export default function IDEApp({ initialQuote, initialMeme, repos, stack, fileCo
         setNextMemeUrl(url)
       }
     } catch {}
-  }, [])
+  }, [fetchFreshMemeUrl])
 
   const prefetchQuote = useCallback(async () => {
     try {
@@ -243,16 +259,18 @@ export default function IDEApp({ initialQuote, initialMeme, repos, stack, fileCo
     setMemeLoading(true)
     const t = Date.now()
     try {
-      const res  = await fetch('https://meme-api.aelx.de/gimme')
-      const data = await res.json()
-      const url  = data.url || ''
-      await new Promise(resolve => {
-        const img = new window.Image()
-        img.onload = img.onerror = () => resolve()
-        img.src = url
-      })
-      setMemeUrl(url)
-      addLog('meme-api.aelx.de/gimme', !!url, Date.now() - t)
+      const url = await fetchFreshMemeUrl()
+      if (url) {
+        await new Promise(resolve => {
+          const img = new window.Image()
+          img.onload = img.onerror = () => resolve()
+          img.src = url
+        })
+        setMemeUrl(url)
+        addLog('meme-api.aelx.de/gimme', true, Date.now() - t)
+      } else {
+        addLog('meme-api.aelx.de/gimme', false, Date.now() - t)
+      }
     } catch {
       setMemeUrl('')
       addLog('meme-api.aelx.de/gimme', false, Date.now() - t)
@@ -260,7 +278,7 @@ export default function IDEApp({ initialQuote, initialMeme, repos, stack, fileCo
       setMemeLoading(false)
       prefetchMeme()
     }
-  }, [addLog, prefetchMeme])
+  }, [addLog, prefetchMeme, fetchFreshMemeUrl])
 
   const fetchQuote = useCallback(async () => {
     const queued = nextQuoteRef.current

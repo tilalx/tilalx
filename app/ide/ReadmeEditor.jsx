@@ -109,7 +109,7 @@ export default async function ReadmeEditor() {
         </div>
 
         <div className="ide-markdown">
-          <h2>## about</h2>
+          <h2 id="readme-about">## about</h2>
           <p>
             Systems and DevOps engineer based in Germany. I design and operate infrastructure —
             containers, pipelines, and the glue code that holds everything together. Most of my
@@ -126,14 +126,14 @@ export default async function ReadmeEditor() {
             pulling a live meme and quote from APIs I run myself. Infrastructure all the way down.
           </p>
 
-          <h2>## stack</h2>
+          <h2 id="readme-stack">## stack</h2>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 16 }}>
             {(stack?.length > 0 ? stack : ['TypeScript','JavaScript','Java','Python','Shell'].map(n => ({ name: n, color: LANG_COLORS[n] || '#6c7086' }))).map(s => (
               <StackBadge key={s.name} name={s.name} color={s.color} />
             ))}
           </div>
 
-          <h2>## repositories</h2>
+          <h2 id="readme-repositories">## repositories</h2>
           {repos?.length > 0 ? (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 10, marginBottom: 24 }}>
               {repos.map(repo => <RepoCard key={repo.name} repo={repo} />)}
@@ -142,10 +142,10 @@ export default async function ReadmeEditor() {
             <p style={{ color: '#6c7086' }}>No repositories found.</p>
           )}
 
-          <h2>## contributions</h2>
+          <h2 id="readme-contributions">## contributions</h2>
           <ContributionGraph username="tilalx" initialData={contributions} />
 
-          <h2>## contact</h2>
+          <h2 id="readme-contact">## contact</h2>
           <pre style={{
             background: '#11111b', border: '1px solid #313244', borderRadius: 6,
             padding: '14px 16px', fontFamily: 'JetBrains Mono, Consolas, monospace',

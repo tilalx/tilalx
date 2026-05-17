@@ -1,4 +1,4 @@
-'use client'
+
 
 export default function LivePreview({ memeUrl, memeLoading, quote, quoteLoading, networkLog, showLog }) {
   return (

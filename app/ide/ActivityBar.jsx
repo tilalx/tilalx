@@ -1,4 +1,4 @@
-'use client'
+
 
 import { IconFiles, IconSearch, IconGit, IconExtensions, IconSettings } from './icons'
 
