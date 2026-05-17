@@ -1,12 +1,11 @@
 {
-  "name": "tilalx.dev",
+  "name": "tilalx",
   "short_name": "tilalx",
   "description": "Personal page — Tilo Alexander",
   "icons": [
     {
       "src": "/favicon.svg",
       "sizes": "any",
-      "type": "image/svg+xml",
       "purpose": "any maskable"
     }
   ],

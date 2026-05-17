@@ -84,52 +84,6 @@ pipeline {
         }
       }
     }
-
-    stage('Commit Deploy Branch') {
-      when {
-        branch 'main'
-      }
-      steps {
-        script {
-          // Create a temporary container from the image built on main (latest)
-          sh "docker create --name extract-container ${env.IMAGE_TAG}"
-
-          sh "rm -rf build-artifacts || true"
-          sh "mkdir -p build-artifacts"
-
-          // Copy build output out of the container
-          sh "docker cp extract-container:/usr/share/nginx/html ./build-artifacts"
-
-          sh "docker rm -f extract-container || true"
-
-          withCredentials([usernamePassword(
-            credentialsId: 'github-tilalx',
-            usernameVariable: 'GIT_USERNAME',
-            passwordVariable: 'GIT_PASSWORD'
-          )]) {
-            sh "git config user.email '${GIT_USERNAME}@users.noreply.github.com'"
-            sh "git config user.name '${GIT_USERNAME}'"
-
-            // Ensure we have deploy locally
-            sh "git fetch origin deploy || true"
-            sh "git checkout -B deploy"
-
-            // Clean tracked files
-            sh "git rm -rf . || true"
-
-            // Put build output into docs/
-            sh "mkdir -p docs"
-            sh "cp -R build-artifacts/html/. docs/"
-
-            sh "git add -A"
-            sh "git commit -m 'Deploy: update build artifacts' || echo 'No changes to commit'"
-
-            sh "git remote set-url origin https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/tilalx/tilalx.git"
-            sh "git push --force origin deploy"
-          }
-        }
-      }
-    }
   }
 
   post {
