@@ -96,8 +96,11 @@ export default async function ReadmeEditor() {
         <div className="ide-profile-header">
           <img
             className="ide-profile-photo"
-            src="https://github.com/tilalx.png"
+            src="https://avatars.githubusercontent.com/u/59500358?s=150&v=4"
             alt="Tilo Alexander"
+            width={72}
+            height={72}
+            fetchPriority="high"
           />
           <div>
             <div className="ide-profile-hi"># Hi, I&apos;m</div>

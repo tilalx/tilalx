@@ -16,6 +16,17 @@ import { ProblemsPanel, TerminalPanel } from './ide/Terminal'
 import StatusBar from './ide/StatusBar'
 import PreviewSheet from './ide/PreviewSheet'
 
+function pickMemeUrl(preview, fallback, targetWidth = 500) {
+  if (preview?.length) {
+    const sized = preview
+      .map(p => { const m = p.match(/[?&]width=(\d+)/); return { url: p, w: m ? +m[1] : 0 } })
+      .filter(p => p.w > 0)
+      .sort((a, b) => a.w - b.w)
+    if (sized.length) return (sized.find(p => p.w >= targetWidth) ?? sized.at(-1)).url
+  }
+  return fallback || ''
+}
+
 const IconPanel = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
     <rect x="3" y="3" width="18" height="18" rx="2"/>
@@ -66,7 +77,7 @@ function Drawer({ open, onClose, activeTab, openFile, onTabChange, onOpenFile, r
   return (
     <>
       <div className={`ide-drawer-overlay${open ? ' open' : ''}`} onClick={onClose} />
-      <div className={`ide-drawer${open ? ' open' : ''}`} aria-hidden={!open}>
+      <div className={`ide-drawer${open ? ' open' : ''}`} inert={!open}>
         <Sidebar
           activityView="explorer"
           activeTab={activeTab}
@@ -134,12 +145,11 @@ export default function IDEApp({ initialQuote, initialMeme, repos, stack, fileCo
   const [termInput, setTermInput] = useState('')
   const termInputRef = useRef(null)
 
-  const [clock, setClock] = useState(() =>
-    new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
-  )
+  const [clock, setClock] = useState('')
 
   useEffect(() => {
     const tick = () => setClock(new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }))
+    tick()
     const ms = 60000 - (Date.now() % 60000)
     const t = setTimeout(() => { tick(); setInterval(tick, 60000) }, ms)
     return () => clearTimeout(t)
@@ -201,7 +211,7 @@ export default function IDEApp({ initialQuote, initialMeme, repos, stack, fileCo
     for (let i = 0; i < maxRetries; i++) {
       const res  = await fetch('https://meme-api.aelx.de/gimme')
       const data = await res.json()
-      const url  = data.url || ''
+      const url  = pickMemeUrl(data.preview, data.url)
       if (!url) continue
       if (!seenMemeUrls.current.has(url)) {
         seenMemeUrls.current.add(url)

@@ -82,18 +82,20 @@ export default async function HomePage() {
   ])
 
   return (
-    <IDEApp
-      initialQuote={initialQuote}
-      initialMeme={initialMeme}
-      repos={repos}
-      stack={stack}
-      fileContents={getFileContents()}
-      readmeContent={
-        <Suspense key="readme" fallback={<ReadmeFallback />}>
-          <ReadmeEditor />
-        </Suspense>
-      }
-    />
+    <main style={{ display: 'contents' }}>
+      <IDEApp
+        initialQuote={initialQuote}
+        initialMeme={initialMeme}
+        repos={repos}
+        stack={stack}
+        fileContents={getFileContents()}
+        readmeContent={
+          <Suspense key="readme" fallback={<ReadmeFallback />}>
+            <ReadmeEditor />
+          </Suspense>
+        }
+      />
+    </main>
   )
 }
 

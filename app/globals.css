@@ -284,7 +284,8 @@ body {
 .ide-tab-close {
   width: 14px; height: 14px;
   display: flex; align-items: center; justify-content: center;
-  font-size: 11px; color: #45475a; line-height: 1; margin-left: 2px;
+  font-size: 11px; color: #45475a; line-height: 1;
+  padding: 5px; margin: -5px -5px -5px -3px;
 }
 .ide-tab:hover .ide-tab-close { color: var(--ide-fg2); }
 .ide-tab.active .ide-tab-close { color: var(--ide-muted); }
@@ -522,12 +523,20 @@ body {
    SKELETON
    ============================================================ */
 .ide-skeleton {
-  background: linear-gradient(90deg, var(--ide-border) 25%, #45475a 50%, var(--ide-border) 75%);
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
+  background: var(--ide-border);
   border-radius: 4px;
+  position: relative;
+  overflow: hidden;
 }
-@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+.ide-skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent 0%, #45475a 40%, transparent 100%);
+  transform: translateX(-100%);
+  animation: shimmer 1.5s infinite;
+}
+@keyframes shimmer { to { transform: translateX(200%); } }
 
 /* ============================================================
    MOBILE HEADER

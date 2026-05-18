@@ -51,7 +51,7 @@ export default function MemesEditor({ memeUrl, memeLoading, onNext, autoPlay, in
         {memeLoading ? (
           <div className="ide-skeleton" style={{ width: '55%', height: '55%', minHeight: 200, minWidth: 200, maxWidth: 500 }} />
         ) : memeUrl ? (
-          <img src={memeUrl} alt="meme" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', display: 'block' }} />
+          <img src={memeUrl} alt="meme" style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }} />
         ) : (
           <span style={{ color: '#6c7086', fontSize: 12, fontFamily: 'monospace' }}>{'// null — failed to load'}</span>
         )}
