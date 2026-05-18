@@ -1,14 +1,14 @@
 import { NextResponse } from 'next/server'
 
-const CURRENT_YEAR = new Date().getFullYear()
-
 export async function GET(request, { params }) {
-  const year = parseInt(params.year, 10)
-  if (!year || year < 2010 || year > CURRENT_YEAR) {
+  const { year: yearParam } = await params
+  const currentYear = new Date().getFullYear()
+  const year = parseInt(yearParam, 10)
+  if (!year || year < 2010 || year > currentYear) {
     return NextResponse.json(null, { status: 400 })
   }
 
-  const isPast = year < CURRENT_YEAR
+  const isPast = year < currentYear
   const revalidate = isPast ? 31536000 : 3600
 
   try {
