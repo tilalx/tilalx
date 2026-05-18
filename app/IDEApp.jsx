@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { TABS } from './ide/constants'
-import { stripQuotes, parseTags, getFileColor, runTerminalCommand } from './ide/utils'
+import { TABS, THEMES } from './ide/constants'
+import { stripQuotes, parseTags, getFileColor, runTerminalCommand, pickMemeUrl } from './ide/utils'
 import { IconSettings } from './ide/icons'
 import ActivityBar from './ide/ActivityBar'
 import Sidebar from './ide/Sidebar'
@@ -16,16 +16,6 @@ import { ProblemsPanel, TerminalPanel } from './ide/Terminal'
 import StatusBar from './ide/StatusBar'
 import PreviewSheet from './ide/PreviewSheet'
 
-function pickMemeUrl(preview, fallback, targetWidth = 500) {
-  if (preview?.length) {
-    const sized = preview
-      .map(p => { const m = p.match(/[?&]width=(\d+)/); return { url: p, w: m ? +m[1] : 0 } })
-      .filter(p => p.w > 0)
-      .sort((a, b) => a.w - b.w)
-    if (sized.length) return (sized.find(p => p.w >= targetWidth) ?? sized.at(-1)).url
-  }
-  return fallback || ''
-}
 
 const IconPanel = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -96,26 +86,28 @@ function Drawer({ open, onClose, activeTab, openFile, onTabChange, onOpenFile, r
   )
 }
 
-export default function IDEApp({ initialQuote, initialMeme, repos, stack, fileContents, readmeContent }) {
+export default function IDEApp({ initialQuotes = [], initialMemes = [], initialCommits = [], repos, stack, fileContents, readmeContent }) {
   const [activeTab,      setActiveTab]      = useState('readme')
   const [activityActive, setActivityActive] = useState('explorer')
   const [panelTab,       setPanelTab]       = useState('preview')
   const [drawerOpen,     setDrawerOpen]     = useState(false)
   const [sheetOpen,      setSheetOpen]      = useState(false)
 
-  const [openFile,     setOpenFile]     = useState(null)
-  const [openFileLine, setOpenFileLine] = useState(null)
+  const [openFile,      setOpenFile]      = useState(null)
+  const [openFileLine,  setOpenFileLine]  = useState(null)
+  const [memeTabViewed, setMemeTabViewed] = useState(false)
 
   const ideRootRef   = useRef(null)
-  const seenMemeUrls = useRef(new Set(initialMeme ? [initialMeme] : []))
+  const seenMemeUrls = useRef(new Set(initialMemes.map(m => m.url)))
+  const memeQueue    = useRef(initialMemes.slice(1))
+  const quoteQueue   = useRef(initialQuotes.slice(1))
 
-  const [memeUrl,     setMemeUrl]     = useState(initialMeme || '')
-  const [memeLoading, setMemeLoading] = useState(!initialMeme)
-  const [nextMemeUrl, setNextMemeUrl] = useState('')
+  const [memeUrl,      setMemeUrl]      = useState(initialMemes[0]?.url  || '')
+  const [memeThumbUrl, setMemeThumbUrl] = useState(initialMemes[0]?.thumb || '')
+  const [memeLoading,  setMemeLoading]  = useState(initialMemes.length === 0)
 
-  const [quote,        setQuote]        = useState(initialQuote)
-  const [quoteLoading, setQuoteLoading] = useState(!initialQuote)
-  const [nextQuote,    setNextQuote]    = useState(null)
+  const [quote,        setQuote]        = useState(initialQuotes[0] || null)
+  const [quoteLoading, setQuoteLoading] = useState(initialQuotes.length === 0)
 
   const [networkLog, setNetworkLog] = useState([])
   const addLog = useCallback((url, ok, ms) => {
@@ -134,9 +126,9 @@ export default function IDEApp({ initialQuote, initialMeme, repos, stack, fileCo
     document.cookie = `ide-settings=${encodeURIComponent(str)}; path=/; max-age=31536000; SameSite=Lax`
   }, [settings])
 
-  const [commits,        setCommits]        = useState([])
+  const [commits,        setCommits]        = useState(initialCommits)
   const [commitsLoading, setCommitsLoading] = useState(false)
-  const [commitsFetched, setCommitsFetched] = useState(false)
+  const [commitsFetched, setCommitsFetched] = useState(initialCommits.length > 0)
 
   const [termHistory, setTermHistory] = useState([
     { type: 'output', text: 'tilalx terminal v1.0.0' },
@@ -154,13 +146,6 @@ export default function IDEApp({ initialQuote, initialMeme, repos, stack, fileCo
     const t = setTimeout(() => { tick(); setInterval(tick, 60000) }, ms)
     return () => clearTimeout(t)
   }, [])
-
-  const THEMES = {
-    'Catppuccin Mocha': { '--ide-bg': '#1e1e2e', '--ide-bg2': '#181825', '--ide-bg3': '#11111b', '--ide-border': '#313244', '--ide-accent': '#89b4fa', '--ide-fg': '#cdd6f4', '--ide-fg2': '#a6adc8', '--ide-muted': '#6c7086' },
-    'One Dark Pro':     { '--ide-bg': '#282c34', '--ide-bg2': '#21252b', '--ide-bg3': '#1a1d23', '--ide-border': '#3e4451', '--ide-accent': '#61afef', '--ide-fg': '#abb2bf', '--ide-fg2': '#9da5b4', '--ide-muted': '#5c6370' },
-    'GitHub Dark':      { '--ide-bg': '#0d1117', '--ide-bg2': '#161b22', '--ide-bg3': '#010409', '--ide-border': '#30363d', '--ide-accent': '#58a6ff', '--ide-fg': '#c9d1d9', '--ide-fg2': '#8b949e', '--ide-muted': '#484f58' },
-    'Tokyo Night':      { '--ide-bg': '#1a1b26', '--ide-bg2': '#16161e', '--ide-bg3': '#13131a', '--ide-border': '#292e42', '--ide-accent': '#7aa2f7', '--ide-fg': '#c0caf5', '--ide-fg2': '#a9b1d6', '--ide-muted': '#565f89' },
-  }
 
   useEffect(() => {
     document.documentElement.style.setProperty('--ide-font-size', `${settings['editor.fontSize']}px`)
@@ -207,96 +192,65 @@ export default function IDEApp({ initialQuote, initialMeme, repos, stack, fileCo
     setTermInput('')
   }, [termInput, repos, stack, commits])
 
-  const fetchFreshMemeUrl = useCallback(async (maxRetries = 8) => {
-    for (let i = 0; i < maxRetries; i++) {
-      const res  = await fetch('https://meme-api.aelx.de/gimme')
-      const data = await res.json()
-      const url  = pickMemeUrl(data.preview, data.url)
-      if (!url) continue
-      if (!seenMemeUrls.current.has(url)) {
+  const refillMemeQueue = useCallback(async () => {
+    try {
+      const res   = await fetch('https://meme-api.aelx.de/gimme/10')
+      const data  = await res.json()
+      const items = (data.memes || [])
+        .filter(m => m.url && !seenMemeUrls.current.has(m.url))
+        .map(m => ({ url: m.url, thumb: pickMemeUrl(m.preview, m.url) }))
+      items.forEach(({ url }) => {
         seenMemeUrls.current.add(url)
-        if (seenMemeUrls.current.size > 50) {
+        if (seenMemeUrls.current.size > 100)
           seenMemeUrls.current.delete(seenMemeUrls.current.values().next().value)
-        }
-        return url
-      }
-    }
-    return null
+      })
+      memeQueue.current = [...memeQueue.current, ...items]
+    } catch {}
   }, [])
 
-  const prefetchMeme = useCallback(async () => {
+  const refillQuoteQueue = useCallback(async () => {
     try {
-      const url = await fetchFreshMemeUrl()
-      if (url) {
-        await new Promise(resolve => {
-          const img = new window.Image()
-          img.onload = img.onerror = () => resolve()
-          img.src = url
-        })
-        setNextMemeUrl(url)
-      }
-    } catch {}
-  }, [fetchFreshMemeUrl])
-
-  const prefetchQuote = useCallback(async () => {
-    try {
-      const res  = await fetch('https://quotes.aelx.de/random?count=1', { cache: 'no-store' })
+      const res  = await fetch('https://quotes.aelx.de/random?count=10', { cache: 'no-store' })
       const data = await res.json()
-      if (data?.length > 0) {
-        setNextQuote({
-          content: stripQuotes(data[0].content),
-          author:  data[0].author,
-          tags:    parseTags(data[0].tags),
-        })
-      }
+      quoteQueue.current = [
+        ...quoteQueue.current,
+        ...(data || []).map(q => ({ content: stripQuotes(q.content), author: q.author, tags: parseTags(q.tags) })),
+      ]
     } catch {}
   }, [])
-
-  const nextMemeUrlRef = useRef(nextMemeUrl)
-  const nextQuoteRef   = useRef(nextQuote)
-  useEffect(() => { nextMemeUrlRef.current = nextMemeUrl }, [nextMemeUrl])
-  useEffect(() => { nextQuoteRef.current   = nextQuote   }, [nextQuote])
 
   const fetchMeme = useCallback(async () => {
-    const queued = nextMemeUrlRef.current
+    if (memeQueue.current.length < 3) refillMemeQueue()
+    const queued = memeQueue.current.shift()
     if (queued) {
-      setNextMemeUrl('')
-      setMemeUrl(queued)
+      setMemeUrl(queued.url)
+      setMemeThumbUrl(queued.thumb)
       addLog('meme-api.aelx.de/gimme', true, 0)
-      prefetchMeme()
       return
     }
     setMemeLoading(true)
     const t = Date.now()
     try {
-      const url = await fetchFreshMemeUrl()
+      const res  = await fetch('https://meme-api.aelx.de/gimme')
+      const data = await res.json()
+      const url  = data.url || ''
       if (url) {
-        await new Promise(resolve => {
-          const img = new window.Image()
-          img.onload = img.onerror = () => resolve()
-          img.src = url
-        })
         setMemeUrl(url)
+        setMemeThumbUrl(pickMemeUrl(data.preview, url))
         addLog('meme-api.aelx.de/gimme', true, Date.now() - t)
-      } else {
-        addLog('meme-api.aelx.de/gimme', false, Date.now() - t)
-      }
+      } else addLog('meme-api.aelx.de/gimme', false, Date.now() - t)
     } catch {
       setMemeUrl('')
       addLog('meme-api.aelx.de/gimme', false, Date.now() - t)
-    } finally {
-      setMemeLoading(false)
-      prefetchMeme()
-    }
-  }, [addLog, prefetchMeme, fetchFreshMemeUrl])
+    } finally { setMemeLoading(false) }
+  }, [addLog, refillMemeQueue])
 
   const fetchQuote = useCallback(async () => {
-    const queued = nextQuoteRef.current
+    if (quoteQueue.current.length < 3) refillQuoteQueue()
+    const queued = quoteQueue.current.shift()
     if (queued) {
-      setNextQuote(null)
       setQuote(queued)
       addLog('quotes.aelx.de/random', true, 0)
-      prefetchQuote()
       return
     }
     setQuoteLoading(true)
@@ -305,27 +259,19 @@ export default function IDEApp({ initialQuote, initialMeme, repos, stack, fileCo
       const res  = await fetch('https://quotes.aelx.de/random?count=1', { cache: 'no-store' })
       const data = await res.json()
       if (data?.length > 0) {
-        setQuote({
-          content: stripQuotes(data[0].content),
-          author:  data[0].author,
-          tags:    parseTags(data[0].tags),
-        })
+        setQuote({ content: stripQuotes(data[0].content), author: data[0].author, tags: parseTags(data[0].tags) })
         addLog('quotes.aelx.de/random', true, Date.now() - t)
       }
     } catch {
-      setQuote({ content: 'Failed to load quote.', author: '', tags: [] })
       addLog('quotes.aelx.de/random', false, Date.now() - t)
-    } finally {
-      setQuoteLoading(false)
-      prefetchQuote()
-    }
-  }, [addLog, prefetchQuote])
+    } finally { setQuoteLoading(false) }
+  }, [addLog, refillQuoteQueue])
 
   useEffect(() => {
-    const memeReady  = !!initialMeme
-    const quoteReady = !!initialQuote
-    if (!memeReady)  fetchMeme();  else prefetchMeme()
-    if (!quoteReady) fetchQuote(); else prefetchQuote()
+    if (initialMemes.length === 0) fetchMeme()
+    else if (memeQueue.current.length < 3) refillMemeQueue()
+    if (initialQuotes.length === 0) fetchQuote()
+    else if (quoteQueue.current.length < 3) refillQuoteQueue()
     fetchCommits()
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -370,7 +316,7 @@ export default function IDEApp({ initialQuote, initialMeme, repos, stack, fileCo
       <PreviewSheet
         open={sheetOpen}
         onClose={() => setSheetOpen(false)}
-        memeUrl={memeUrl} memeLoading={memeLoading}
+        memeUrl={memeTabViewed ? memeUrl : memeThumbUrl} memeLoading={memeLoading}
         quote={quote} quoteLoading={quoteLoading}
         networkLog={networkLog}
         showLog={settings['network.showLog']}
@@ -398,7 +344,8 @@ export default function IDEApp({ initialQuote, initialMeme, repos, stack, fileCo
               <div
                 key={tab.id}
                 className={`ide-tab${activeTab === tab.id && !openFile ? ' active' : ''}`}
-                onClick={() => { setActiveTab(tab.id); setOpenFile(null) }}
+                onClick={() => { setActiveTab(tab.id); setOpenFile(null); if (tab.id === 'memes') setMemeTabViewed(true) }}
+                onMouseEnter={() => { if (tab.id === 'memes' && memeUrl) { const img = new window.Image(); img.src = memeUrl } }}
               >
                 <span className="ide-tab-dot" style={{ background: tab.color }} />
                 {tab.label}
@@ -468,7 +415,7 @@ export default function IDEApp({ initialQuote, initialMeme, repos, stack, fileCo
           </div>
           {panelTab === 'preview'  && (
             <LivePreview
-              memeUrl={memeUrl} memeLoading={memeLoading}
+              memeUrl={memeTabViewed ? memeUrl : memeThumbUrl} memeLoading={memeLoading}
               quote={quote} quoteLoading={quoteLoading}
               networkLog={networkLog} showLog={settings['network.showLog']}
             />

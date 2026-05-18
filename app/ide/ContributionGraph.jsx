@@ -30,7 +30,7 @@ export default function ContributionGraph({ username, initialData }) {
     }
     setLoading(true)
     setData(null)
-    fetch(`https://github-contributions-api.jogruber.de/v4/${username}?y=${year}`)
+    fetch(`/api/contributions/${year}`)
       .then(r => r.json())
       .then(d => { setData(d); setLoading(false) })
       .catch(() => setLoading(false))

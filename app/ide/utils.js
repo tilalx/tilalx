@@ -1,5 +1,16 @@
 import { FILE_TREE } from './constants'
 
+export function pickMemeUrl(preview, fallback, targetWidth = 500) {
+  if (preview?.length) {
+    const sized = preview
+      .map(p => { const m = p.match(/[?&]width=(\d+)/); return { url: p, w: m ? +m[1] : 0 } })
+      .filter(p => p.w > 0)
+      .sort((a, b) => a.w - b.w)
+    if (sized.length) return (sized.find(p => p.w >= targetWidth) ?? sized.at(-1)).url
+  }
+  return fallback || ''
+}
+
 export function stripQuotes(text) {
   return text ? text.replace(/^["'"']+|["'"']+$/g, '').trim() : ''
 }

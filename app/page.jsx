@@ -4,6 +4,7 @@ import { Suspense } from 'react'
 import IDEApp       from './IDEApp'
 import ReadmeEditor from './ide/ReadmeEditor'
 import { LANG_COLORS } from './ide/constants'
+import { stripQuotes, parseTags, pickMemeUrl } from './ide/utils'
 
 const SOURCE_FILES = [
   'README.md', 'package.json', 'next.config.js', 'Dockerfile', '.gitignore',
@@ -20,29 +21,51 @@ function getFileContents() {
   return out
 }
 
-async function getInitialQuote() {
+async function getInitialQuotes(count = 10) {
   try {
-    const res  = await fetch('https://quotes.aelx.de/random?count=1', { cache: 'no-store' })
-    if (!res.ok) return null
+    const res  = await fetch(`https://quotes.aelx.de/random?count=${count}`, { cache: 'no-store' })
+    if (!res.ok) return []
     const data = await res.json()
-    if (data?.length > 0) {
-      return {
-        content: data[0].content.replace(/^["'"']+|["'"']+$/g, '').trim(),
-        author:  data[0].author,
-        tags:    (data[0].tags || '').replace(/^\[|\]$/g, '').split(',').map(t => t.trim()).filter(Boolean),
-      }
-    }
-  } catch {}
-  return null
+    return (data || []).map(q => ({
+      content: stripQuotes(q.content),
+      author:  q.author,
+      tags:    parseTags(q.tags),
+    }))
+  } catch { return [] }
 }
 
-async function getInitialMeme() {
+async function getInitialMemes(count = 10) {
   try {
-    const res = await fetch('https://meme-api.aelx.de/gimme', { cache: 'no-store' })
-    if (!res.ok) return null
+    const res  = await fetch(`https://meme-api.aelx.de/gimme/${count}`, { cache: 'no-store' })
+    if (!res.ok) return []
     const data = await res.json()
-    return data.url || null
-  } catch { return null }
+    return (data.memes || [])
+      .filter(m => m.url)
+      .map(m => ({ url: m.url, thumb: pickMemeUrl(m.preview, m.url) }))
+  } catch { return [] }
+}
+
+function warmContributionYears() {
+  const current = new Date().getFullYear()
+  const years   = Array.from({ length: current - 2020 + 1 }, (_, i) => 2020 + i)
+  years.forEach(y => {
+    const isPast = y < current
+    fetch(`https://github-contributions-api.jogruber.de/v4/tilalx?y=${y}`, {
+      next: { revalidate: isPast ? 31536000 : 3600 },
+    }).catch(() => {})
+  })
+}
+
+async function getInitialCommits() {
+  try {
+    const res = await fetch(
+      'https://api.github.com/repos/tilalx/tilalx/commits?per_page=15',
+      { next: { revalidate: 60 } }
+    )
+    if (!res.ok) return []
+    const data = await res.json()
+    return Array.isArray(data) ? data : []
+  } catch { return [] }
 }
 
 async function getReposAndStack() {
@@ -75,17 +98,20 @@ export const metadata = {
 }
 
 export default async function HomePage() {
-  const [initialQuote, initialMeme, { repos, stack }] = await Promise.all([
-    getInitialQuote(),
-    getInitialMeme(),
+  warmContributionYears()
+  const [initialQuotes, initialMemes, { repos, stack }, initialCommits] = await Promise.all([
+    getInitialQuotes(),
+    getInitialMemes(),
     getReposAndStack(),
+    getInitialCommits(),
   ])
 
   return (
     <main style={{ display: 'contents' }}>
       <IDEApp
-        initialQuote={initialQuote}
-        initialMeme={initialMeme}
+        initialQuotes={initialQuotes}
+        initialMemes={initialMemes}
+        initialCommits={initialCommits}
         repos={repos}
         stack={stack}
         fileContents={getFileContents()}
