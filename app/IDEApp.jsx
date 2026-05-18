@@ -97,10 +97,20 @@ export default function IDEApp({ initialQuotes = [], initialMemes = [], initialC
   const [openFileLine,  setOpenFileLine]  = useState(null)
   const [memeTabViewed, setMemeTabViewed] = useState(false)
 
-  const ideRootRef   = useRef(null)
-  const seenMemeUrls = useRef(new Set(initialMemes.map(m => m.url)))
-  const memeQueue    = useRef(initialMemes.slice(1))
-  const quoteQueue   = useRef(initialQuotes.slice(1))
+  const ideRootRef      = useRef(null)
+  const seenMemeUrls    = useRef(new Set(initialMemes.map(m => m.url)))
+  const memeQueue       = useRef(initialMemes.slice(1))
+  const quoteQueue      = useRef(initialQuotes.slice(1))
+  const preloadedUrlRef = useRef('')
+
+  const preloadNextMeme = useCallback(() => {
+    const next = memeQueue.current[0]?.url
+    if (next && next !== preloadedUrlRef.current) {
+      preloadedUrlRef.current = next
+      const img = new window.Image()
+      img.src = next
+    }
+  }, [])
 
   const [memeUrl,      setMemeUrl]      = useState(initialMemes[0]?.url  || '')
   const [memeThumbUrl, setMemeThumbUrl] = useState(initialMemes[0]?.thumb || '')
@@ -205,8 +215,9 @@ export default function IDEApp({ initialQuotes = [], initialMemes = [], initialC
           seenMemeUrls.current.delete(seenMemeUrls.current.values().next().value)
       })
       memeQueue.current = [...memeQueue.current, ...items]
+      preloadNextMeme()
     } catch {}
-  }, [])
+  }, [preloadNextMeme])
 
   const refillQuoteQueue = useCallback(async () => {
     try {
@@ -222,6 +233,7 @@ export default function IDEApp({ initialQuotes = [], initialMemes = [], initialC
   const fetchMeme = useCallback(async () => {
     if (memeQueue.current.length < 3) refillMemeQueue()
     const queued = memeQueue.current.shift()
+    preloadNextMeme()
     if (queued) {
       setMemeUrl(queued.url)
       setMemeThumbUrl(queued.thumb)
@@ -243,7 +255,7 @@ export default function IDEApp({ initialQuotes = [], initialMemes = [], initialC
       setMemeUrl('')
       addLog('meme-api.aelx.de/gimme', false, Date.now() - t)
     } finally { setMemeLoading(false) }
-  }, [addLog, refillMemeQueue])
+  }, [addLog, refillMemeQueue, preloadNextMeme])
 
   const fetchQuote = useCallback(async () => {
     if (quoteQueue.current.length < 3) refillQuoteQueue()

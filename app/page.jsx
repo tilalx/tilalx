@@ -45,15 +45,16 @@ async function getInitialMemes(count = 10) {
   } catch { return [] }
 }
 
-function warmContributionYears() {
+async function warmContributionYears() {
   const current = new Date().getFullYear()
   const years   = Array.from({ length: current - 2020 + 1 }, (_, i) => 2020 + i)
-  years.forEach(y => {
+  for (const y of years) {
     const isPast = y < current
-    fetch(`https://github-contributions-api.jogruber.de/v4/tilalx?y=${y}`, {
+    await fetch(`https://github-contributions-api.jogruber.de/v4/tilalx?y=${y}`, {
       next: { revalidate: isPast ? 31536000 : 3600 },
     }).catch(() => {})
-  })
+    await new Promise(r => setTimeout(r, 200))
+  }
 }
 
 async function getInitialCommits() {
