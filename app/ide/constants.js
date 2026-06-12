@@ -33,82 +33,34 @@ export const LANG_COLORS = {
   Nix:         '#7e7eff',
 }
 
-export const FILE_TREE = [
-  { name: 'README.md',      path: 'README.md',      ext: 'md',   color: '#519aba', modified: true },
-  { name: 'package.json',   path: 'package.json',   ext: 'json', color: '#cbcb41' },
-  { name: 'next.config.js', path: 'next.config.js', ext: 'js',   color: '#cbcb41' },
-  { name: 'Dockerfile',     path: 'Dockerfile',      ext: 'dock', color: '#2496ed' },
-  { name: '.gitignore',     path: '.gitignore',      ext: 'git',  color: '#f1502f' },
-  {
-    name: 'app', type: 'folder', color: '#dcb67a', open: true,
-    children: [
-      { name: 'layout.jsx',  path: 'app/layout.jsx',  ext: 'jsx', color: '#519aba' },
-      { name: 'page.jsx',    path: 'app/page.jsx',    ext: 'jsx', color: '#519aba', modified: true },
-      { name: 'globals.css', path: 'app/globals.css', ext: 'css', color: '#6196cc' },
-      { name: 'IDEApp.jsx',  path: 'app/IDEApp.jsx',  ext: 'jsx', color: '#519aba', modified: true },
-      { name: 'Track.jsx',   path: 'app/Track.jsx',   ext: 'jsx', color: '#519aba' },
-    ],
-  },
-  {
-    name: 'public', type: 'folder', color: '#dcb67a', open: false,
-    children: [
-      { name: 'favicon.svg',  path: 'public/favicon.svg',  ext: 'svg', color: '#ffb13b' },
-      { name: 'manifest.json',path: 'public/manifest.json',ext: 'json',color: '#cbcb41' },
-      { name: 'robots.txt',   path: 'public/robots.txt',   ext: 'txt', color: '#a6adc8' },
-    ],
-  },
-]
-
-export const SOURCE_FILES = []
-
 export const CONTRIB_COLORS = ['#161b22', '#0e4429', '#006d32', '#26a641', '#39d353']
 export const CONTRIB_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
 
+// Per-setting metadata. `default` powers the modified-indicator + Reset action.
+// `enumDescs` (optional) documents each select option, like VS Code dropdowns.
+const SET = {
+  fontSize:    { key: 'editor.fontSize',     label: 'Font Size',        desc: 'Controls the font size in pixels.',                        type: 'num',    min: 10, max: 24, default: 13 },
+  wordWrap:    { key: 'editor.wordWrap',      label: 'Word Wrap',        desc: 'Controls how lines should wrap.',                          type: 'select', default: 'off', options: ['off', 'on', 'wordWrapColumn', 'bounded'],
+                 enumDescs: ['Lines will never wrap.', 'Lines will wrap at the viewport width.', 'Lines will wrap at "Word Wrap Column".', 'Lines wrap at the minimum of viewport and column.'] },
+  tabSize:     { key: 'editor.tabSize',       label: 'Tab Size',         desc: 'The number of spaces a tab is equal to. This setting is overridden based on the file contents when "Detect Indentation" is on.', type: 'num', min: 1, max: 8, default: 2 },
+  formatOnSave:{ key: 'editor.formatOnSave',  label: 'Format On Save',   desc: 'Format a file on save. A formatter must be available, the file must not be saved after delay, and the editor must not be shutting down.', type: 'bool', default: false, boolLabel: 'Format a file on save.' },
+  minimap:     { key: 'editor.minimap',       label: 'Minimap: Enabled', desc: 'Controls whether the minimap is shown.',                   type: 'bool',   default: false, boolLabel: 'Controls whether the minimap is shown.' },
+  autoSave:    { key: 'files.autoSave',       label: 'Auto Save',        desc: 'Controls auto save of editors that have unsaved changes.', type: 'select', default: 'off', options: ['off', 'afterDelay', 'onFocusChange', 'onWindowChange'],
+                 enumDescs: ['An editor with changes is never automatically saved.', 'An editor with changes is automatically saved after the configured delay.', 'An editor with changes is automatically saved when the editor loses focus.', 'An editor with changes is automatically saved when the window loses focus.'] },
+  memesAuto:   { key: 'memes.autoPlay',       label: 'Memes: Auto Play', desc: 'Automatically advance the meme feed in the editor.',       type: 'bool',   default: false, boolLabel: 'Automatically advance the meme feed.' },
+  memesInterval:{ key: 'memes.interval',      label: 'Memes: Interval',  desc: 'Number of seconds between memes when auto-play is enabled.', type: 'num', min: 1, max: 60, default: 10 },
+  showLog:     { key: 'network.showLog',      label: 'Network: Show Log',desc: 'Show the live network request log in the preview panel.',  type: 'bool',   default: true,  boolLabel: 'Show live network request log.' },
+  colorTheme:  { key: 'workbench.colorTheme', label: 'Color Theme',      desc: 'Specifies the color theme used in the workbench.',          type: 'select', default: 'Catppuccin Mocha', options: ['Catppuccin Mocha', 'One Dark Pro', 'GitHub Dark', 'Tokyo Night'] },
+}
+
 export const SETTINGS_DEF = [
-  {
-    group: 'Commonly Used',
-    items: [
-      { key: 'editor.fontSize',    label: 'Font Size',         desc: 'Controls the font size in pixels.',                          type: 'num',    min: 10, max: 24 },
-      { key: 'editor.wordWrap',    label: 'Word Wrap',         desc: 'Controls how lines should wrap.',                            type: 'select', options: ['off', 'on', 'wordWrapColumn', 'bounded'] },
-      { key: 'editor.formatOnSave',label: 'Format On Save',    desc: 'Format a file on save. A formatter must be available.',      type: 'bool' },
-      { key: 'files.autoSave',     label: 'Auto Save',         desc: 'Controls auto save of editors that have unsaved changes.',   type: 'select', options: ['off', 'afterDelay', 'onFocusChange', 'onWindowChange'] },
-      { key: 'memes.autoPlay',     label: 'Memes: Auto Play',  desc: 'Automatically advance the meme feed.',                      type: 'bool' },
-      { key: 'network.showLog',    label: 'Network: Show Log', desc: 'Show live network request log in the preview panel.',        type: 'bool' },
-    ],
-  },
-  {
-    group: 'Editor',
-    items: [
-      { key: 'editor.fontSize',    label: 'Font Size',         desc: 'Controls the font size in pixels.',                          type: 'num',    min: 10, max: 24 },
-      { key: 'editor.wordWrap',    label: 'Word Wrap',         desc: 'Controls how lines should wrap.',                            type: 'select', options: ['off', 'on', 'wordWrapColumn', 'bounded'] },
-      { key: 'editor.tabSize',     label: 'Tab Size',          desc: 'The number of spaces a tab is equal to.',                    type: 'num',    min: 1,  max: 8 },
-      { key: 'editor.formatOnSave','label': 'Format On Save',  desc: 'Format a file on save. A formatter must be available.',      type: 'bool' },
-      { key: 'editor.minimap',     label: 'Minimap: Enabled',  desc: 'Controls whether the minimap is shown.',                     type: 'bool' },
-    ],
-  },
-  {
-    group: 'Files',
-    items: [
-      { key: 'files.autoSave',     label: 'Auto Save',         desc: 'Controls auto save of editors that have unsaved changes.',   type: 'select', options: ['off', 'afterDelay', 'onFocusChange', 'onWindowChange'] },
-    ],
-  },
-  {
-    group: 'Memes',
-    items: [
-      { key: 'memes.autoPlay',     label: 'Auto Play',         desc: 'Automatically advance the meme feed.',                      type: 'bool' },
-      { key: 'memes.interval',     label: 'Interval',          desc: 'Seconds between memes when auto-play is on.',               type: 'num',    min: 1,  max: 60 },
-    ],
-  },
-  {
-    group: 'Network',
-    items: [
-      { key: 'network.showLog',    label: 'Show Request Log',  desc: 'Show live network request log in the preview panel.',        type: 'bool' },
-    ],
-  },
-  {
-    group: 'Appearance',
-    items: [
-      { key: 'workbench.colorTheme', label: 'Color Theme',     desc: 'Specifies the color theme used in the workbench.',           type: 'select', options: ['Catppuccin Mocha', 'One Dark Pro', 'GitHub Dark', 'Tokyo Night'] },
-    ],
-  },
+  { group: 'Commonly Used', items: [SET.fontSize, SET.wordWrap, SET.formatOnSave, SET.autoSave, SET.colorTheme, SET.memesAuto, SET.showLog] },
+  { group: 'Text Editor',   items: [SET.fontSize, SET.wordWrap, SET.tabSize, SET.formatOnSave, SET.minimap] },
+  { group: 'Files',         items: [SET.autoSave] },
+  { group: 'Workbench',     items: [SET.colorTheme] },
+  { group: 'Memes',         items: [SET.memesAuto, SET.memesInterval] },
+  { group: 'Network',       items: [SET.showLog] },
 ]
+
+// Flat key → default map, for resets and modified-detection.
+export const SETTINGS_DEFAULTS = Object.fromEntries(Object.values(SET).map(s => [s.key, s.default]))

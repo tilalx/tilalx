@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { TABS, THEMES } from './ide/constants'
 import { stripQuotes, parseTags, getFileColor, runTerminalCommand, pickMemeUrl } from './ide/utils'
 import { IconSettings } from './ide/icons'
@@ -12,9 +12,11 @@ import QuotesEditor from './ide/QuotesEditor'
 import SettingsUI from './ide/SettingsUI'
 import CodeViewer from './ide/CodeViewer'
 import LivePreview from './ide/LivePreview'
-import { ProblemsPanel, TerminalPanel } from './ide/Terminal'
+import { ProblemsPanel } from './ide/Terminal'
+import TerminalView from './ide/XTermPanel'
 import StatusBar from './ide/StatusBar'
 import PreviewSheet from './ide/PreviewSheet'
+import CommandPalette from './ide/CommandPalette'
 
 
 const IconPanel = () => (
@@ -63,7 +65,7 @@ function MobileNav({ activeTab, onTabChange }) {
   )
 }
 
-function Drawer({ open, onClose, activeTab, openFile, onTabChange, onOpenFile, repos }) {
+function Drawer({ open, onClose, activeTab, openFile, onTabChange, onOpenFile, repos, fileTree }) {
   return (
     <>
       <div className={`ide-drawer-overlay${open ? ' open' : ''}`} onClick={onClose} />
@@ -75,6 +77,7 @@ function Drawer({ open, onClose, activeTab, openFile, onTabChange, onOpenFile, r
           onTabChange={id => { onTabChange(id); onClose() }}
           onOpenFile={(fp, ln) => { onOpenFile(fp, ln); onClose() }}
           repos={repos}
+          fileTree={fileTree}
           stack={[]}
           commits={[]}
           commitsLoading={false}
@@ -86,12 +89,139 @@ function Drawer({ open, onClose, activeTab, openFile, onTabChange, onOpenFile, r
   )
 }
 
-export default function IDEApp({ initialQuotes = [], initialMemes = [], initialCommits = [], repos, stack, fileContents, readmeContent }) {
+export default function IDEApp({ initialQuotes = [], initialMemes = [], initialCommits = [], repos, stack, fileTree = [], fileContents, readmeContent }) {
   const [activeTab,      setActiveTab]      = useState('readme')
   const [activityActive, setActivityActive] = useState('explorer')
-  const [panelTab,       setPanelTab]       = useState('preview')
+  const [bottomTab,      setBottomTab]      = useState('terminal')
   const [drawerOpen,     setDrawerOpen]     = useState(false)
   const [sheetOpen,      setSheetOpen]      = useState(false)
+
+  // ── Workbench layout: terminals (split groups), panel, sidebar — persisted ─
+  // A terminal "group" is a split: { id, name, panes: number[] }.
+  // Defaults render on the server; persisted state is hydrated on mount (below)
+  // to avoid SSR/client markup mismatches on the inline width/height.
+  const [terminals,        setTerminals]        = useState([{ id: 1, name: 'fish', panes: [1] }])
+  const [activeTerminalId, setActiveTerminalId] = useState(1)
+  const [panelHeight,      setPanelHeight]      = useState(230)
+  const [panelMaximized,   setPanelMaximized]   = useState(false)
+  const [panelCollapsed,   setPanelCollapsed]   = useState(false)
+  const [sidebarWidth,     setSidebarWidth]     = useState(240)
+  const [sidebarVisible,   setSidebarVisible]   = useState(true)
+
+  const [paletteOpen, setPaletteOpen] = useState(false)
+  const [paletteMode, setPaletteMode] = useState('files')
+  const openPalette = useCallback((mode) => { setPaletteMode(mode); setPaletteOpen(true) }, [])
+
+  const termIdRef    = useRef(2)
+  const paneIdRef    = useRef(2)
+
+  const terminalsRef        = useRef(terminals)
+  const activeTerminalIdRef = useRef(activeTerminalId)
+  const panelHeightRef      = useRef(panelHeight)
+  const sidebarWidthRef     = useRef(sidebarWidth)
+  useEffect(() => { terminalsRef.current        = terminals        }, [terminals])
+  useEffect(() => { activeTerminalIdRef.current = activeTerminalId }, [activeTerminalId])
+  useEffect(() => { panelHeightRef.current      = panelHeight      }, [panelHeight])
+  useEffect(() => { sidebarWidthRef.current     = sidebarWidth     }, [sidebarWidth])
+
+  // Hydrate persisted workbench layout once, after mount.
+  useEffect(() => {
+    let w
+    try { w = JSON.parse(localStorage.getItem('ide-workbench') || '{}') } catch { return }
+    if (typeof w.panelHeight === 'number')     setPanelHeight(w.panelHeight)
+    if (typeof w.panelMaximized === 'boolean') setPanelMaximized(w.panelMaximized)
+    if (typeof w.panelCollapsed === 'boolean') setPanelCollapsed(w.panelCollapsed)
+    if (typeof w.sidebarWidth === 'number')    setSidebarWidth(w.sidebarWidth)
+    if (typeof w.sidebarVisible === 'boolean') setSidebarVisible(w.sidebarVisible)
+    if (Array.isArray(w.terminals) && w.terminals.length) {
+      const valid = w.terminals.filter(t => t && Array.isArray(t.panes) && t.panes.length)
+      if (valid.length) {
+        setTerminals(valid)
+        termIdRef.current = Math.max(0, ...valid.map(t => t.id)) + 1
+        paneIdRef.current = Math.max(0, ...valid.flatMap(t => t.panes)) + 1
+        setActiveTerminalId(valid.some(t => t.id === w.activeTerminalId) ? w.activeTerminalId : valid.at(-1).id)
+      }
+    }
+  }, [])
+
+  // Persist on change (skip the initial commit so we don't clobber storage).
+  const firstWriteRef = useRef(true)
+  useEffect(() => {
+    if (firstWriteRef.current) { firstWriteRef.current = false; return }
+    const data = { terminals, activeTerminalId, panelHeight, panelMaximized, panelCollapsed, sidebarWidth, sidebarVisible }
+    try { localStorage.setItem('ide-workbench', JSON.stringify(data)) } catch {}
+  }, [terminals, activeTerminalId, panelHeight, panelMaximized, panelCollapsed, sidebarWidth, sidebarVisible])
+
+  const addTerminal = useCallback(() => {
+    const id = termIdRef.current++
+    const paneId = paneIdRef.current++
+    setTerminals(p => [...p, { id, name: `fish ${p.length + 1}`, panes: [paneId] }])
+    setActiveTerminalId(id)
+    setBottomTab('terminal'); setPanelCollapsed(false)
+  }, [])
+
+  const splitTerminal = useCallback(() => {
+    const targetId = activeTerminalIdRef.current
+    const groups = terminalsRef.current
+    if (!groups.length || !groups.some(g => g.id === targetId)) { addTerminal(); return }
+    const paneId = paneIdRef.current++
+    setTerminals(prev => prev.map(g => g.id === targetId ? { ...g, panes: [...g.panes, paneId] } : g))
+    setBottomTab('terminal'); setPanelCollapsed(false)
+  }, [addTerminal])
+
+  const closeTerminal = useCallback((id) => {
+    const remaining = terminalsRef.current.filter(t => t.id !== id)
+    setTerminals(remaining)
+    setActiveTerminalId(cur => (cur === id ? (remaining.at(-1)?.id ?? null) : cur))
+  }, [])
+
+  // Per-pane close button only renders when a group has >1 pane, so the result
+  // always keeps at least one pane.
+  const closePane = useCallback((groupId, paneId) => {
+    setTerminals(prev => prev.map(g => g.id === groupId ? { ...g, panes: g.panes.filter(p => p !== paneId) } : g))
+  }, [])
+
+  const renameTerminal = useCallback((id, name) => {
+    setTerminals(prev => prev.map(g => g.id === id ? { ...g, name } : g))
+  }, [])
+
+  const startPanelResize = useCallback((e) => {
+    if (panelMaximized || panelCollapsed) return
+    e.preventDefault()
+    const startY = e.clientY
+    const startH = panelHeightRef.current
+    document.body.style.cursor = 'row-resize'
+    document.body.style.userSelect = 'none'
+    const onMove = (ev) => {
+      const next = startH + (startY - ev.clientY)
+      setPanelHeight(Math.min(Math.max(next, 80), window.innerHeight - 160))
+    }
+    const onUp = () => {
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onUp)
+      document.body.style.cursor = ''
+      document.body.style.userSelect = ''
+    }
+    window.addEventListener('pointermove', onMove)
+    window.addEventListener('pointerup', onUp)
+  }, [panelMaximized, panelCollapsed])
+
+  const startSidebarResize = useCallback((e) => {
+    e.preventDefault()
+    const startX = e.clientX
+    const startW = sidebarWidthRef.current
+    document.body.style.cursor = 'col-resize'
+    document.body.style.userSelect = 'none'
+    const onMove = (ev) => setSidebarWidth(Math.min(Math.max(startW + (ev.clientX - startX), 150), 500))
+    const onUp = () => {
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onUp)
+      document.body.style.cursor = ''
+      document.body.style.userSelect = ''
+    }
+    window.addEventListener('pointermove', onMove)
+    window.addEventListener('pointerup', onUp)
+  }, [])
 
   const [openFile,      setOpenFile]      = useState(null)
   const [openFileLine,  setOpenFileLine]  = useState(null)
@@ -124,13 +254,22 @@ export default function IDEApp({ initialQuotes = [], initialMemes = [], initialC
     setNetworkLog(prev => [{ url, ok, ms }, ...prev].slice(0, 50))
   }, [])
 
-  const [settings, setSettings] = useState(() => {
-    const defaults = { 'memes.autoPlay': false, 'memes.interval': 10, 'editor.fontSize': 13, 'network.showLog': true }
-    try { return { ...defaults, ...JSON.parse(localStorage.getItem('ide-settings') || '{}') } } catch { return defaults }
-  })
+  // Defaults render on both server and first client paint; persisted values are
+  // hydrated on mount to avoid SSR/client hydration mismatches (the server has
+  // no access to localStorage, so it must match the default first render).
+  const [settings, setSettings] = useState({ 'memes.autoPlay': false, 'memes.interval': 10, 'editor.fontSize': 13, 'network.showLog': true })
   const setSetting = useCallback((k, v) => setSettings(p => ({ ...p, [k]: v })), [])
 
   useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem('ide-settings') || '{}')
+      if (saved && typeof saved === 'object') setSettings(p => ({ ...p, ...saved }))
+    } catch {}
+  }, [])
+
+  const settingsFirstWrite = useRef(true)
+  useEffect(() => {
+    if (settingsFirstWrite.current) { settingsFirstWrite.current = false; return }
     const str = JSON.stringify(settings)
     try { localStorage.setItem('ide-settings', str) } catch {}
     document.cookie = `ide-settings=${encodeURIComponent(str)}; path=/; max-age=31536000; SameSite=Lax`
@@ -140,12 +279,7 @@ export default function IDEApp({ initialQuotes = [], initialMemes = [], initialC
   const [commitsLoading, setCommitsLoading] = useState(false)
   const [commitsFetched, setCommitsFetched] = useState(initialCommits.length > 0)
 
-  const [termHistory, setTermHistory] = useState([
-    { type: 'output', text: 'tilalx terminal v1.0.0' },
-    { type: 'output', text: 'Type "help" for available commands.' },
-  ])
-  const [termInput, setTermInput] = useState('')
-  const termInputRef = useRef(null)
+
 
   const [clock, setClock] = useState('')
 
@@ -186,21 +320,6 @@ export default function IDEApp({ initialQuotes = [], initialMemes = [], initialC
     setOpenFileLine(line || null)
     setActiveTab('file')
   }, [])
-
-  const handleTermSubmit = useCallback(() => {
-    if (!termInput.trim()) return
-    const result = runTerminalCommand(termInput, { repos, stack, commits })
-    if (result === null) {
-      setTermHistory([])
-    } else {
-      setTermHistory(prev => [
-        ...prev,
-        { type: 'prompt', text: termInput },
-        ...result.map(text => ({ type: 'output', text })),
-      ])
-    }
-    setTermInput('')
-  }, [termInput, repos, stack, commits])
 
   const refillMemeQueue = useCallback(async () => {
     try {
@@ -294,8 +413,11 @@ export default function IDEApp({ initialQuotes = [], initialMemes = [], initialC
     : TABS.find(t => t.id === activeTab)?.label || 'README.md'
 
   const handleActivitySelect = (id) => {
+    // Clicking the already-active view toggles the side bar (VS Code behavior).
+    if (id === activityActive && id !== 'settings') { setSidebarVisible(v => !v); return }
     if (id === 'git' && !commitsFetched) fetchCommits()
     if (id === 'settings') setActiveTab('settings')
+    setSidebarVisible(true)
     setActivityActive(id)
   }
 
@@ -305,6 +427,46 @@ export default function IDEApp({ initialQuotes = [], initialMemes = [], initialC
     setActiveTab(ids[(idx + 1) % ids.length])
     setOpenFile(null)
   }
+
+  const closeActiveEditor = useCallback(() => {
+    if (openFile) { setActiveTab('readme'); setOpenFile(null) }
+    else if (activeTab === 'settings') { setActiveTab('readme'); setActivityActive('explorer') }
+  }, [openFile, activeTab])
+
+  // ── Command Palette sources ───────────────────────────────────────────────
+  const filePaths = useMemo(() => Object.keys(fileContents || {}), [fileContents])
+  const paletteCommands = useMemo(() => [
+    { id: 'term-new',     label: 'Terminal: Create New Terminal', hint: 'Ctrl+Shift+`', run: addTerminal },
+    { id: 'term-split',   label: 'Terminal: Split Terminal',                            run: splitTerminal },
+    { id: 'view-panel',   label: 'View: Toggle Panel',            hint: 'Ctrl+`',       run: () => setPanelCollapsed(c => !c) },
+    { id: 'view-sidebar', label: 'View: Toggle Primary Side Bar', hint: 'Ctrl+B',       run: () => setSidebarVisible(v => !v) },
+    { id: 'view-maxpanel',label: 'View: Toggle Maximized Panel',                        run: () => { setPanelMaximized(m => !m); setPanelCollapsed(false) } },
+    { id: 'pref-settings',label: 'Preferences: Open Settings',                          run: () => { setActiveTab('settings'); setActivityActive('settings') } },
+    { id: 'go-readme',    label: 'Go to File: README.md',                               run: () => { setActiveTab('readme'); setOpenFile(null) } },
+    { id: 'go-memes',     label: 'Go to File: memes.feed',                              run: () => { setActiveTab('memes'); setOpenFile(null); setMemeTabViewed(true) } },
+    { id: 'go-quotes',    label: 'Go to File: quotes.log',                              run: () => { setActiveTab('quotes'); setOpenFile(null) } },
+    ...Object.keys(THEMES).map(name => ({ id: `theme-${name}`, label: `Preferences: Color Theme — ${name}`, run: () => setSetting('workbench.colorTheme', name) })),
+    { id: 'net-log',      label: 'Network: Toggle Request Log',                         run: () => setSetting('network.showLog', !settings['network.showLog']) },
+  ], [addTerminal, splitTerminal, setSetting, settings])
+
+  // ── Global keybindings (VS Code-style) ────────────────────────────────────
+  useEffect(() => {
+    const onKey = (e) => {
+      if (!(e.ctrlKey || e.metaKey)) return
+      const key = e.key.length === 1 ? e.key.toLowerCase() : e.key
+      switch (key) {
+        case 'p':       e.preventDefault(); openPalette(e.shiftKey ? 'commands' : 'files'); break
+        case '`':       e.preventDefault(); setPanelCollapsed(c => !c); setBottomTab('terminal'); break
+        case '~':       e.preventDefault(); addTerminal(); break // Ctrl+Shift+`
+        case 'j':       e.preventDefault(); setPanelCollapsed(c => !c); break
+        case 'b':       e.preventDefault(); setSidebarVisible(v => !v); break
+        case 'w':       if (openFile || activeTab === 'settings') { e.preventDefault(); closeActiveEditor() } break
+        default: break
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [openPalette, addTerminal, closeActiveEditor, openFile, activeTab])
 
   return (
     <div className="ide-root" ref={ideRootRef}>
@@ -324,6 +486,7 @@ export default function IDEApp({ initialQuotes = [], initialMemes = [], initialC
         onTabChange={id => { setActiveTab(id); setOpenFile(null) }}
         onOpenFile={handleOpenFile}
         repos={repos}
+        fileTree={fileTree}
       />
       <PreviewSheet
         open={sheetOpen}
@@ -336,20 +499,33 @@ export default function IDEApp({ initialQuotes = [], initialMemes = [], initialC
 
       <div className="ide-main">
         <ActivityBar active={activityActive} onSelect={handleActivitySelect} />
-        <Sidebar
-          activityView={activityActive}
-          activeTab={activeTab}
-          openFile={openFile}
-          onTabChange={id => { setActiveTab(id); setOpenFile(null) }}
-          onOpenFile={handleOpenFile}
-          repos={repos}
-          stack={stack}
-          commits={commits}
-          commitsLoading={commitsLoading}
-          settings={settings}
-          fileContents={fileContents}
-        />
+        {sidebarVisible && (
+          <div className="ide-sidebar-host" style={{ width: sidebarWidth }}>
+            <Sidebar
+              activityView={activityActive}
+              activeTab={activeTab}
+              openFile={openFile}
+              onTabChange={id => { setActiveTab(id); setOpenFile(null) }}
+              onOpenFile={handleOpenFile}
+              repos={repos}
+              fileTree={fileTree}
+              stack={stack}
+              commits={commits}
+              commitsLoading={commitsLoading}
+              settings={settings}
+              fileContents={fileContents}
+            />
+            <div
+              className="ide-sidebar-resize-handle"
+              onPointerDown={startSidebarResize}
+              role="separator"
+              aria-orientation="vertical"
+              aria-label="Resize side bar"
+            />
+          </div>
+        )}
 
+        <div className="ide-editor-center">
         <div className="ide-editor-wrap">
           <div className="ide-tab-bar">
             {TABS.map(tab => (
@@ -409,37 +585,91 @@ export default function IDEApp({ initialQuotes = [], initialMemes = [], initialC
           )}
         </div>
 
+          <div
+            className={`ide-bottom-panel${panelMaximized ? ' maximized' : ''}${panelCollapsed ? ' collapsed' : ''}`}
+            style={panelMaximized || panelCollapsed ? undefined : { height: panelHeight }}
+          >
+            <div
+              className="ide-panel-resize-handle"
+              onPointerDown={startPanelResize}
+              onDoubleClick={() => { setPanelMaximized(m => !m); setPanelCollapsed(false) }}
+              role="separator"
+              aria-orientation="horizontal"
+              aria-label="Resize panel"
+            />
+            <div className="ide-bottom-tabs">
+              {[
+                { id: 'problems',      label: 'Problems'      },
+                { id: 'output',        label: 'Output'        },
+                { id: 'debug-console', label: 'Debug Console' },
+                { id: 'terminal',      label: 'Terminal', badge: terminals.length > 1 ? String(terminals.length) : null },
+                { id: 'ports',         label: 'Ports', badge: '3' },
+              ].map(t => (
+                <div
+                  key={t.id}
+                  className={`ide-bottom-tab${bottomTab === t.id ? ' active' : ''}`}
+                  onClick={() => setBottomTab(t.id)}
+                >
+                  {t.label}
+                  {t.badge && <span className="ide-bottom-tab-badge">{t.badge}</span>}
+                </div>
+              ))}
+              <div className="ide-bottom-actions">
+                <button className="ide-bottom-action-btn" title="New Terminal" aria-label="New Terminal" onClick={addTerminal}>+</button>
+                <button className="ide-bottom-action-btn" title="Split Terminal" aria-label="Split Terminal" onClick={splitTerminal}>⧉</button>
+                <button
+                  className="ide-bottom-action-btn"
+                  title={panelMaximized ? 'Restore Panel Size' : 'Maximize Panel Size'}
+                  aria-label={panelMaximized ? 'Restore Panel Size' : 'Maximize Panel Size'}
+                  onClick={() => { setPanelMaximized(m => !m); setPanelCollapsed(false) }}
+                >{panelMaximized ? '▭' : '□'}</button>
+                <button
+                  className="ide-bottom-action-btn"
+                  title={panelCollapsed ? 'Restore Panel' : 'Hide Panel'}
+                  aria-label={panelCollapsed ? 'Restore Panel' : 'Hide Panel'}
+                  onClick={() => setPanelCollapsed(c => !c)}
+                >{panelCollapsed ? '⌃' : '⌄'}</button>
+                <button
+                  className="ide-bottom-action-btn"
+                  title="Kill Active Terminal"
+                  aria-label="Kill Active Terminal"
+                  onClick={() => { if (bottomTab === 'terminal' && activeTerminalId != null) closeTerminal(activeTerminalId) }}
+                >×</button>
+              </div>
+            </div>
+            {!panelCollapsed && bottomTab !== 'terminal' && (
+              <div className="ide-panel-content">
+                {bottomTab === 'problems'      && <ProblemsPanel repos={repos} />}
+                {bottomTab === 'output'        && <div className="ide-bottom-empty">No output available.</div>}
+                {bottomTab === 'debug-console' && <div className="ide-bottom-empty">No debug sessions active.</div>}
+                {bottomTab === 'ports'         && <div className="ide-bottom-empty">No ports forwarded.</div>}
+              </div>
+            )}
+            <div style={{ display: !panelCollapsed && bottomTab === 'terminal' ? 'flex' : 'none', flex: 1, minHeight: 0, overflow: 'hidden' }}>
+              <TerminalView
+                groups={terminals}
+                activeId={activeTerminalId}
+                isActive={!panelCollapsed && bottomTab === 'terminal'}
+                onAdd={addTerminal}
+                onSelect={setActiveTerminalId}
+                onClose={closeTerminal}
+                onClosePane={closePane}
+                onRename={renameTerminal}
+                repos={repos} stack={stack} commits={commits} fileTree={fileTree}
+              />
+            </div>
+          </div>
+        </div>
+
         <div className="ide-right-panel">
           <div className="ide-panel-tabs">
-            {[
-              { id: 'preview',  label: 'Live Preview' },
-              { id: 'problems', label: 'Problems'     },
-              { id: 'terminal', label: 'Terminal'     },
-            ].map(pt => (
-              <div
-                key={pt.id}
-                className={`ide-panel-tab${panelTab === pt.id ? ' active' : ''}`}
-                onClick={() => setPanelTab(pt.id)}
-              >
-                {pt.label}
-              </div>
-            ))}
+            <div className="ide-panel-tab active">Live Preview</div>
           </div>
-          {panelTab === 'preview'  && (
-            <LivePreview
-              memeUrl={memeTabViewed ? memeUrl : memeThumbUrl} memeLoading={memeLoading}
-              quote={quote} quoteLoading={quoteLoading}
-              networkLog={networkLog} showLog={settings['network.showLog']}
-            />
-          )}
-          {panelTab === 'problems' && <ProblemsPanel repos={repos} />}
-          {panelTab === 'terminal' && (
-            <TerminalPanel
-              history={termHistory} input={termInput}
-              onInput={setTermInput} onSubmit={handleTermSubmit}
-              inputRef={termInputRef}
-            />
-          )}
+          <LivePreview
+            memeUrl={memeTabViewed ? memeUrl : memeThumbUrl} memeLoading={memeLoading}
+            quote={quote} quoteLoading={quoteLoading}
+            networkLog={networkLog} showLog={settings['network.showLog']}
+          />
         </div>
       </div>
 
@@ -452,8 +682,17 @@ export default function IDEApp({ initialQuotes = [], initialMemes = [], initialC
         clock={clock}
         onOpenGit={() => { setActivityActive('git'); if (!commitsFetched) fetchCommits() }}
         onOpenExplorer={() => setActivityActive('explorer')}
-        setPanelTab={setPanelTab}
+        setPanelTab={() => {}}
         onCycleTab={handleCycleTab}
+      />
+
+      <CommandPalette
+        open={paletteOpen}
+        initialMode={paletteMode}
+        files={filePaths}
+        commands={paletteCommands}
+        onOpenFile={handleOpenFile}
+        onClose={() => setPaletteOpen(false)}
       />
     </div>
   )

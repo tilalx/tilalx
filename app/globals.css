@@ -915,13 +915,25 @@ body {
 }
 .ide-settings-view-btn:hover,
 .ide-settings-view-btn.active { background: rgba(137,180,250,0.15); border-color: var(--ide-accent); color: var(--ide-accent); }
-.ide-settings-search-wrap {
+.ide-settings-search-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
   padding: 8px 12px;
   background: var(--ide-bg);
 }
+.ide-settings-search-wrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--ide-bg2);
+  border: 1px solid #45475a;
+  border-radius: 3px;
+  padding: 0 6px;
+  transition: border-color 0.1s;
+}
+.ide-settings-search-wrap:focus-within { border-color: var(--ide-accent); }
 .ide-settings-search-icon {
   width: 14px; height: 14px;
   color: var(--ide-muted);
@@ -929,18 +941,43 @@ body {
 }
 .ide-settings-search {
   flex: 1;
-  background: var(--ide-bg2);
-  border: 1px solid #45475a;
-  border-radius: 3px;
+  min-width: 0;
+  background: transparent;
+  border: none;
   color: var(--ide-fg);
   font-size: 12px;
   font-family: 'JetBrains Mono', monospace;
-  padding: 5px 10px;
+  padding: 6px 2px;
   outline: none;
-  transition: border-color 0.1s;
 }
-.ide-settings-search:focus { border-color: var(--ide-accent); }
 .ide-settings-search::placeholder { color: #45475a; }
+.ide-settings-filter-btn,
+.ide-settings-search-clear {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  background: transparent;
+  border: none;
+  border-radius: 3px;
+  color: var(--ide-muted);
+  cursor: pointer;
+  font-size: 15px;
+  line-height: 1;
+  transition: background 0.1s, color 0.1s;
+}
+.ide-settings-filter-btn:hover,
+.ide-settings-search-clear:hover { color: var(--ide-fg); background: rgba(255,255,255,0.08); }
+.ide-settings-filter-btn.active { color: var(--ide-accent); background: rgba(137,180,250,0.18); }
+.ide-settings-count {
+  flex-shrink: 0;
+  font-size: 11px;
+  color: var(--ide-muted);
+  font-family: 'JetBrains Mono', monospace;
+  white-space: nowrap;
+}
 
 .ide-settings-body {
   display: flex;
@@ -984,8 +1021,16 @@ body {
 
 .ide-settings-content {
   flex: 1;
+  display: block;
+  overflow-y: auto;
+  overflow-x: hidden;
   padding: 0 32px 60px;
-  max-width: 720px;
+  min-width: 0;
+}
+.ide-settings-content > .ide-settings-section { max-width: 760px; }
+.ide-settings-json-scroll {
+  flex: 1;
+  overflow: auto;
 }
 .ide-settings-json-view {
   font-family: 'JetBrains Mono', monospace;
@@ -997,35 +1042,120 @@ body {
   padding: 20px 28px 60px;
   white-space: pre;
 }
-.ide-settings-group { margin-bottom: 4px; }
-.ide-settings-group-title {
-  font-size: 11px;
+.ide-settings-section { margin-bottom: 8px; }
+.ide-settings-section-title {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  font-size: 13px;
   font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--ide-accent);
-  padding: 16px 0 8px;
+  color: var(--ide-fg);
+  padding: 14px 0 8px;
+  margin: 0 0 4px;
+  background: var(--ide-bg);
   border-bottom: 1px solid var(--ide-border);
-  margin-bottom: 4px;
+}
+.ide-settings-noresults {
+  padding: 40px 0;
+  text-align: center;
+  color: var(--ide-muted);
+  font-size: 12px;
   font-family: 'JetBrains Mono', monospace;
 }
 .ide-settings-row-ui {
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 14px 0;
-  border-bottom: 1px solid rgba(49,50,68,0.4);
+  gap: 5px;
+  padding: 13px 12px 13px 26px;
+  border-radius: 4px;
+  border-left: 2px solid transparent;
 }
-.ide-settings-row-ui:hover { background: rgba(255,255,255,0.012); margin: 0 -12px; padding: 14px 12px; }
+.ide-settings-row-ui:hover { background: rgba(255,255,255,0.022); }
+.ide-settings-row-ui.modified { border-left-color: var(--ide-accent); }
 .ide-settings-row-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 13px;
   color: var(--ide-fg);
-  font-family: 'JetBrains Mono', monospace;
 }
 .ide-settings-row-label strong { font-weight: 700; }
 .ide-settings-row-group { color: var(--ide-muted); font-weight: 400; }
-.ide-settings-row-desc  { font-size: 12px; color: var(--ide-muted); line-height: 1.5; }
+.ide-settings-modified-pill {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ide-accent);
+  background: rgba(137,180,250,0.15);
+  border-radius: 3px;
+  padding: 1px 5px;
+}
+.ide-settings-row-id {
+  font-size: 11px;
+  color: var(--ide-muted);
+  font-family: 'JetBrains Mono', monospace;
+  opacity: 0;
+  transition: opacity 0.1s;
+}
+.ide-settings-row-ui:hover .ide-settings-row-id { opacity: 0.7; }
+.ide-settings-row-desc  { font-size: 12px; color: var(--ide-fg2); line-height: 1.5; }
 .ide-settings-row-ctrl  { margin-top: 4px; }
+.ide-settings-enumdesc {
+  margin-top: 5px;
+  font-size: 11px;
+  color: var(--ide-muted);
+  line-height: 1.4;
+}
+
+/* Per-row gear / "more actions" menu */
+.ide-settings-gear-wrap { position: absolute; left: 2px; top: 13px; }
+.ide-settings-gear {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  background: transparent;
+  border: none;
+  border-radius: 3px;
+  color: var(--ide-muted);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.1s, background 0.1s, color 0.1s;
+}
+.ide-settings-row-ui:hover .ide-settings-gear,
+.ide-settings-gear-wrap.open .ide-settings-gear { opacity: 1; }
+.ide-settings-gear:hover { color: var(--ide-fg); background: rgba(255,255,255,0.1); }
+.ide-settings-gear-menu {
+  position: absolute;
+  left: 0;
+  top: 22px;
+  z-index: 10;
+  min-width: 150px;
+  background: var(--ide-bg3);
+  border: 1px solid var(--ide-border);
+  border-radius: 5px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.45);
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+}
+.ide-settings-gear-menu button {
+  text-align: left;
+  background: transparent;
+  border: none;
+  border-radius: 3px;
+  color: var(--ide-fg2);
+  font-size: 12px;
+  padding: 5px 8px;
+  cursor: pointer;
+}
+.ide-settings-gear-menu button:hover:not(:disabled) { background: var(--ide-accent); color: var(--ide-bg); }
+.ide-settings-gear-menu button:disabled { color: var(--ide-muted); cursor: default; opacity: 0.6; }
+.ide-settings-nav-item.empty { opacity: 0.4; cursor: default; }
+.ide-settings-nav-item.empty:hover { background: none; color: var(--ide-fg2); }
 
 .ide-settings-input {
   width: 120px;
@@ -1279,21 +1409,399 @@ body {
 .ide-status-clickable:hover { background: rgba(255,255,255,0.12) !important; }
 
 /* ============================================================
+   EDITOR CENTER + BOTTOM PANEL
+   ============================================================ */
+
+.ide-editor-center {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.ide-editor-center > .ide-editor-wrap {
+  min-height: 0;
+}
+
+.ide-bottom-panel {
+  height: 230px;
+  flex-shrink: 0;
+  background: var(--ide-bg2);
+  border-top: 1px solid var(--ide-border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.ide-bottom-tabs {
+  display: flex;
+  align-items: stretch;
+  background: var(--ide-bg3);
+  border-bottom: 1px solid var(--ide-border);
+  flex-shrink: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.ide-bottom-tabs::-webkit-scrollbar { display: none; }
+
+.ide-bottom-tab {
+  padding: 5px 16px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--ide-muted);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+  user-select: none;
+  transition: color 0.12s;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.ide-bottom-tab:hover  { color: var(--ide-fg2); }
+.ide-bottom-tab.active { color: var(--ide-fg); border-bottom-color: var(--ide-accent); }
+
+.ide-bottom-empty {
+  padding: 16px;
+  color: var(--ide-muted);
+  font-size: 11px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.ide-xterm-container {
+  height: 100%;
+  overflow: hidden;
+  padding: 4px 4px 0;
+  background: #1e1e2e;
+}
+.ide-xterm-container .xterm { height: 100%; }
+.ide-xterm-container .xterm-viewport { overflow-y: auto !important; }
+
+/* ============================================================
+   TERMINAL — WRAPPER, INSTANCES SIDEBAR, ACTION BUTTONS, BADGE
+   ============================================================ */
+
+.ide-terminal-wrapper {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.ide-instances-panel {
+  width: 160px;
+  flex-shrink: 0;
+  background: var(--ide-bg3);
+  border-left: 1px solid var(--ide-border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.ide-instances-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 8px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ide-muted);
+  border-bottom: 1px solid var(--ide-border);
+  flex-shrink: 0;
+}
+.ide-instances-add {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--ide-muted);
+  font-size: 14px;
+  line-height: 1;
+  padding: 0 2px;
+  border-radius: 2px;
+}
+.ide-instances-add:hover { color: var(--ide-fg); }
+.ide-instances-list { flex: 1; overflow-y: auto; padding: 2px 0; }
+.ide-instance-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  cursor: pointer;
+  border-radius: 2px;
+  color: var(--ide-fg2);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.ide-instance-item:hover  { background: rgba(255,255,255,.06); }
+.ide-instance-item.active { background: rgba(137,180,250,.15); color: var(--ide-fg); }
+.ide-instance-icon  { flex-shrink: 0; opacity: .75; }
+.ide-instance-label { flex: 1; overflow: hidden; text-overflow: ellipsis; }
+.ide-instance-badge {
+  font-size: 9px;
+  background: rgba(249,226,175,.2);
+  color: #f9e2af;
+  border-radius: 3px;
+  padding: 0 3px;
+  flex-shrink: 0;
+}
+
+.ide-bottom-actions {
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+  padding: 0 4px;
+  gap: 1px;
+  flex-shrink: 0;
+}
+.ide-bottom-action-btn {
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--ide-muted);
+  font-size: 13px;
+  border-radius: 3px;
+}
+.ide-bottom-action-btn:hover { color: var(--ide-fg); background: rgba(255,255,255,.07); }
+
+.ide-bottom-tab-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 14px;
+  height: 14px;
+  padding: 0 4px;
+  background: var(--ide-accent);
+  color: var(--ide-bg);
+  border-radius: 7px;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1;
+  margin-left: 4px;
+}
+
+/* ============================================================
+   PANEL RESIZE + MAXIMIZE + MULTI-TERMINAL
+   ============================================================ */
+
+.ide-panel-resize-handle {
+  height: 4px;
+  flex-shrink: 0;
+  cursor: row-resize;
+  background: transparent;
+  transition: background 0.15s;
+  touch-action: none;
+}
+.ide-panel-resize-handle:hover,
+.ide-panel-resize-handle:active { background: var(--ide-accent); }
+
+/* Maximize: panel fills the editor column, editor view collapses. */
+.ide-editor-center:has(> .ide-bottom-panel.maximized) > .ide-editor-wrap { display: none; }
+.ide-bottom-panel.maximized { height: auto !important; flex: 1; min-height: 0; }
+.ide-bottom-panel.maximized .ide-panel-resize-handle { cursor: default; }
+.ide-bottom-panel.maximized .ide-panel-resize-handle:hover { background: transparent; }
+
+/* Stack of terminal groups — only the active group is visible, but all stay
+   mounted so each keeps its own buffer + history. A group is a split: one or
+   more panes side-by-side. */
+.ide-terminal-stack {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+.ide-terminal-split { position: absolute; inset: 0; display: flex; }
+.ide-terminal-pane {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+.ide-terminal-pane + .ide-terminal-pane { border-left: 1px solid var(--ide-border); }
+.ide-pane-close {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  z-index: 4;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(30,30,46,.7);
+  border: none;
+  border-radius: 3px;
+  color: var(--ide-muted);
+  cursor: pointer;
+  font-size: 13px;
+  opacity: 0;
+  transition: opacity 0.12s, color 0.12s;
+}
+.ide-terminal-pane:hover .ide-pane-close { opacity: 1; }
+.ide-pane-close:hover { color: var(--ide-fg); background: rgba(243,139,168,.25); }
+
+/* Collapsed bottom panel — only the tab bar shows. */
+.ide-bottom-panel.collapsed { height: auto !important; flex: 0 0 auto; }
+.ide-bottom-panel.collapsed .ide-panel-resize-handle { cursor: default; }
+.ide-bottom-panel.collapsed .ide-panel-resize-handle:hover { background: transparent; }
+
+/* Inline rename input for terminal instances. */
+.ide-instance-rename {
+  flex: 1;
+  min-width: 0;
+  background: var(--ide-bg);
+  border: 1px solid var(--ide-accent);
+  border-radius: 2px;
+  color: var(--ide-fg);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  padding: 1px 4px;
+  outline: none;
+}
+
+/* Resizable side bar — host wraps the sidebar so its width is draggable. */
+.ide-sidebar-host {
+  position: relative;
+  flex-shrink: 0;
+  display: flex;
+  min-width: 0;
+}
+.ide-sidebar-host > .ide-sidebar { width: 100%; }
+.ide-sidebar-resize-handle {
+  position: absolute;
+  top: 0;
+  right: -2px;
+  bottom: 0;
+  width: 5px;
+  cursor: col-resize;
+  z-index: 5;
+  background: transparent;
+  transition: background 0.15s;
+}
+.ide-sidebar-resize-handle:hover,
+.ide-sidebar-resize-handle:active { background: var(--ide-accent); }
+
+/* ============================================================
+   COMMAND PALETTE / QUICK OPEN
+   ============================================================ */
+
+.ide-palette-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding-top: 8vh;
+  background: rgba(0,0,0,0.35);
+}
+.ide-palette {
+  width: min(600px, 90vw);
+  max-height: 60vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--ide-bg2);
+  border: 1px solid var(--ide-border);
+  border-radius: 6px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  overflow: hidden;
+}
+.ide-palette-input {
+  flex-shrink: 0;
+  margin: 8px;
+  padding: 6px 10px;
+  background: var(--ide-bg);
+  border: 1px solid var(--ide-accent);
+  border-radius: 4px;
+  color: var(--ide-fg);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  outline: none;
+}
+.ide-palette-list {
+  overflow-y: auto;
+  padding: 0 4px 6px;
+}
+.ide-palette-empty {
+  padding: 12px;
+  color: var(--ide-muted);
+  font-size: 12px;
+  font-family: 'JetBrains Mono', monospace;
+}
+.ide-palette-item {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 5px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--ide-fg2);
+}
+.ide-palette-item.active { background: var(--ide-accent); color: var(--ide-bg); }
+.ide-palette-label { flex-shrink: 0; font-weight: 500; }
+.ide-palette-hint {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  opacity: 0.7;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.ide-instance-close {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--ide-muted);
+  font-size: 14px;
+  line-height: 1;
+  padding: 0 3px;
+  border-radius: 2px;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 0.12s, color 0.12s, background 0.12s;
+}
+.ide-instance-item:hover  .ide-instance-close,
+.ide-instance-item.active .ide-instance-close { opacity: 1; }
+.ide-instance-close:hover { color: var(--ide-fg); background: rgba(255,255,255,.12); }
+
+.ide-kbd {
+  font-family: 'JetBrains Mono', monospace;
+  background: rgba(255,255,255,.1);
+  border-radius: 3px;
+  padding: 0 5px;
+  margin: 0 2px;
+}
+
+/* ============================================================
    BREAKPOINTS — must live AFTER all base component styles so
    media-query overrides win the cascade.
    ============================================================ */
 
-/* Tablet ≤ 900px: drop right panel, narrow sidebar */
+/* Tablet ≤ 900px: drop right panel, narrow sidebar (override the draggable
+   width so the side bar can't dominate a small viewport). */
 @media (max-width: 900px) {
-  .ide-right-panel { display: none; }
-  .ide-sidebar     { width: 200px; }
+  .ide-right-panel  { display: none; }
+  .ide-bottom-panel { height: 200px; }
+  .ide-sidebar-host { width: 200px !important; }
 }
 
 /* Narrow tablet ≤ 600px: hide sidebar from main row.
    Use child selector so the Drawer's .ide-sidebar is unaffected
    and still renders its content when the drawer is open. */
 @media (max-width: 600px) {
-  .ide-main > .ide-sidebar { display: none; }
+  .ide-main > .ide-sidebar-host { display: none; }
+  .ide-instances-panel { display: none; }
   .ide-settings-body { flex-direction: column; }
   .ide-settings-nav { width: 100%; border-right: none; border-bottom: 1px solid var(--ide-border); flex-direction: row; overflow-x: auto; overflow-y: hidden; padding: 4px; height: auto; }
   .ide-settings-nav-item { white-space: nowrap; padding: 4px 10px; }
@@ -1302,8 +1810,9 @@ body {
 /* Mobile ≤ 559px: single column — hide all desktop panels,
    show mobile header + bottom nav */
 @media (max-width: 559px) {
-  .ide-activity-bar { display: none; }
-  .ide-right-panel  { display: none; }
+  .ide-activity-bar  { display: none; }
+  .ide-right-panel   { display: none; }
+  .ide-bottom-panel  { display: none; }
 
   .ide-mobile-header {
     display: flex;

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo, useRef, useEffect } from 'react'
-import { TABS, FILE_TREE, LANG_COLORS } from './constants'
+import { TABS, LANG_COLORS } from './constants'
 import { timeAgo, repoStatusColor } from './utils'
 import { IconChevron, IconFork, FileItemIcon } from './icons'
 import { SettingsSidebarHint } from './SettingsUI'
@@ -77,7 +77,7 @@ function SearchHighlight({ text, query }) {
   )
 }
 
-function ExplorerPanel({ activeTab, openFile, onTabChange, onOpenFile, repos }) {
+function ExplorerPanel({ activeTab, openFile, onTabChange, onOpenFile, repos, fileTree = [] }) {
   const [sections, setSections] = useState({ openEditors: true, files: true, repos: true, outline: true })
   const toggle = key => setSections(s => ({ ...s, [key]: !s[key] }))
   const activeFile = openFile || TABS.find(t => t.id === activeTab)?.label || 'README.md'
@@ -110,7 +110,7 @@ function ExplorerPanel({ activeTab, openFile, onTabChange, onOpenFile, repos }) 
           tilalx
           <span style={{ marginLeft: 6, color: '#a6e3a1', fontSize: 9, fontWeight: 700, letterSpacing: '0.06em' }}>MAIN</span>
         </div>
-        {sections.files && FILE_TREE.map(item => (
+        {sections.files && fileTree.map(item => (
           <FileTreeItem
             key={item.name}
             item={item}
@@ -404,10 +404,10 @@ function ExtensionsPanel({ repos, stack }) {
   )
 }
 
-export default function Sidebar({ activityView, activeTab, openFile, onTabChange, onOpenFile, repos, stack, commits, commitsLoading, settings, fileContents }) {
+export default function Sidebar({ activityView, activeTab, openFile, onTabChange, onOpenFile, repos, fileTree, stack, commits, commitsLoading, settings, fileContents }) {
   if (activityView === 'search')     return <SearchPanel repos={repos} stack={stack} onTabChange={onTabChange} fileContents={fileContents} onOpenFile={onOpenFile} />
   if (activityView === 'git')        return <SourceControlPanel commits={commits} loading={commitsLoading} />
   if (activityView === 'extensions') return <ExtensionsPanel repos={repos} stack={stack} />
   if (activityView === 'settings')   return <SettingsSidebarHint settings={settings} />
-  return <ExplorerPanel activeTab={activeTab} openFile={openFile} onTabChange={onTabChange} onOpenFile={onOpenFile} repos={repos} />
+  return <ExplorerPanel activeTab={activeTab} openFile={openFile} onTabChange={onTabChange} onOpenFile={onOpenFile} repos={repos} fileTree={fileTree} />
 }

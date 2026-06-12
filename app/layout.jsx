@@ -1,5 +1,6 @@
 import { cookies } from 'next/headers'
 import './globals.css'
+import '@xterm/xterm/css/xterm.css'
 import Track from './Track'
 import { THEMES } from './ide/constants'
 
