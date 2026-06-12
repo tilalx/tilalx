@@ -3,12 +3,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { runTerminalCommand, COMMANDS } from './utils'
 
-const THEME = {
-  background:          '#1e1e2e',
-  foreground:          '#cdd6f4',
-  cursor:              '#f5c2e7',
-  cursorAccent:        '#1e1e2e',
-  selectionBackground: '#45475a80',
+// ANSI palette stays constant; the base surface (background/foreground/cursor/
+// selection) is derived from the active workbench theme vars so the terminal
+// tracks the global theme switch instead of staying frozen on Catppuccin.
+const ANSI = {
   black:        '#45475a', red:          '#f38ba8',
   green:        '#a6e3a1', yellow:       '#f9e2af',
   blue:         '#89b4fa', magenta:      '#cba6f7',
@@ -18,6 +16,15 @@ const THEME = {
   brightBlue:   '#89b4fa', brightMagenta:'#cba6f7',
   brightCyan:   '#89dceb', brightWhite:  '#a6adc8',
 }
+
+const buildTheme = (vars = {}) => ({
+  ...ANSI,
+  background:          vars['--ide-bg']  || '#1e1e2e',
+  foreground:          vars['--ide-fg']  || '#cdd6f4',
+  cursor:              vars['--ide-accent'] || '#f5c2e7',
+  cursorAccent:        vars['--ide-bg']  || '#1e1e2e',
+  selectionBackground: (vars['--ide-fg2'] || '#a6adc8') + '40',
+})
 
 const PS1_TOP = '\r\n\x1b[32mtilo@aelx\x1b[0m \x1b[34m~/Github/tilalx\x1b[0m \x1b[33m(main)\x1b[0m\r\n'
 const PS1_BOT = '\x1b[36m>\x1b[0m '
@@ -34,7 +41,7 @@ const commonPrefix = (arr) => {
 
 const CLEAR_SCREEN = '\x1b[2J\x1b[3J\x1b[H' // clear viewport + scrollback + home
 
-function XTermPane({ repos, stack, commits, fileTree, isActive }) {
+function XTermPane({ repos, stack, commits, fileTree, isActive, themeVars }) {
   const containerRef = useRef(null)
   const fitRef       = useRef(null)
   const termRef      = useRef(null)
@@ -42,11 +49,18 @@ function XTermPane({ repos, stack, commits, fileTree, isActive }) {
   const stackRef     = useRef(stack)
   const commitsRef   = useRef(commits)
   const fileTreeRef  = useRef(fileTree)
+  const themeRef     = useRef(themeVars)
 
   useEffect(() => { reposRef.current    = repos    }, [repos])
   useEffect(() => { stackRef.current    = stack    }, [stack])
   useEffect(() => { commitsRef.current  = commits  }, [commits])
   useEffect(() => { fileTreeRef.current = fileTree }, [fileTree])
+
+  // Repaint the live terminal when the workbench theme changes.
+  useEffect(() => {
+    themeRef.current = themeVars
+    if (termRef.current) termRef.current.options.theme = buildTheme(themeVars)
+  }, [themeVars])
 
   useEffect(() => {
     if (isActive) {
@@ -69,7 +83,7 @@ function XTermPane({ repos, stack, commits, fileTree, isActive }) {
       ])
 
       term = new Terminal({
-        theme: THEME,
+        theme: buildTheme(themeRef.current),
         fontFamily: '"JetBrains Mono", Consolas, "Courier New", monospace',
         fontSize: 13,
         lineHeight: 1.45,
@@ -262,7 +276,7 @@ function InstanceRow({ group, active, onSelect, onClose, onRename }) {
 // Container: manages the stack of terminal groups + the instances sidebar.
 // Group/pane state lives in IDEApp so the bottom-panel action buttons can drive it.
 // A group is a split: { id, name, panes: number[] } — panes render side-by-side.
-export default function TerminalView({ groups, activeId, isActive, onAdd, onSelect, onClose, onRename, onClosePane, repos, stack, commits, fileTree }) {
+export default function TerminalView({ groups, activeId, isActive, onAdd, onSelect, onClose, onRename, onClosePane, repos, stack, commits, fileTree, themeVars }) {
   return (
     <div className="ide-terminal-wrapper">
       <div className="ide-terminal-stack">
@@ -290,6 +304,7 @@ export default function TerminalView({ groups, activeId, isActive, onAdd, onSele
                 <XTermPane
                   repos={repos} stack={stack} commits={commits} fileTree={fileTree}
                   isActive={isActive && activeId === group.id}
+                  themeVars={themeVars}
                 />
               </div>
             ))}

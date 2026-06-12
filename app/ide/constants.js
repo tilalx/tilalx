@@ -45,6 +45,8 @@ const SET = {
   tabSize:     { key: 'editor.tabSize',       label: 'Tab Size',         desc: 'The number of spaces a tab is equal to. This setting is overridden based on the file contents when "Detect Indentation" is on.', type: 'num', min: 1, max: 8, default: 2 },
   formatOnSave:{ key: 'editor.formatOnSave',  label: 'Format On Save',   desc: 'Format a file on save. A formatter must be available, the file must not be saved after delay, and the editor must not be shutting down.', type: 'bool', default: false, boolLabel: 'Format a file on save.' },
   minimap:     { key: 'editor.minimap',       label: 'Minimap: Enabled', desc: 'Controls whether the minimap is shown.',                   type: 'bool',   default: false, boolLabel: 'Controls whether the minimap is shown.' },
+  stickyScroll:{ key: 'editor.stickyScroll',  label: 'Sticky Scroll: Enabled', desc: 'Shows the nested current scopes during the scroll at the top of the editor.', type: 'bool', default: false, boolLabel: 'Show nested scopes while scrolling.' },
+  indentGuides:{ key: 'editor.guides.indentation', label: 'Guides: Indentation', desc: 'Controls whether the editor should render indent guides.', type: 'bool', default: false, boolLabel: 'Render indentation guides.' },
   autoSave:    { key: 'files.autoSave',       label: 'Auto Save',        desc: 'Controls auto save of editors that have unsaved changes.', type: 'select', default: 'off', options: ['off', 'afterDelay', 'onFocusChange', 'onWindowChange'],
                  enumDescs: ['An editor with changes is never automatically saved.', 'An editor with changes is automatically saved after the configured delay.', 'An editor with changes is automatically saved when the editor loses focus.', 'An editor with changes is automatically saved when the window loses focus.'] },
   memesAuto:   { key: 'memes.autoPlay',       label: 'Memes: Auto Play', desc: 'Automatically advance the meme feed in the editor.',       type: 'bool',   default: false, boolLabel: 'Automatically advance the meme feed.' },
@@ -55,7 +57,7 @@ const SET = {
 
 export const SETTINGS_DEF = [
   { group: 'Commonly Used', items: [SET.fontSize, SET.wordWrap, SET.formatOnSave, SET.autoSave, SET.colorTheme, SET.memesAuto, SET.showLog] },
-  { group: 'Text Editor',   items: [SET.fontSize, SET.wordWrap, SET.tabSize, SET.formatOnSave, SET.minimap] },
+  { group: 'Text Editor',   items: [SET.fontSize, SET.wordWrap, SET.tabSize, SET.formatOnSave, SET.minimap, SET.stickyScroll, SET.indentGuides] },
   { group: 'Files',         items: [SET.autoSave] },
   { group: 'Workbench',     items: [SET.colorTheme] },
   { group: 'Memes',         items: [SET.memesAuto, SET.memesInterval] },

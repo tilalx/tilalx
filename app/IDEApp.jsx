@@ -3,6 +3,15 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { TABS, THEMES } from './ide/constants'
 import { stripQuotes, parseTags, getFileColor, runTerminalCommand, pickMemeUrl } from './ide/utils'
+import {
+  initialEditorState, activeGroupOf, activeTabOf, openInGroup, closeTab, closeOthers,
+  closeAll, closeGroup, setPinned, setActiveTab, focusGroup, focusGroupByIndex, moveTab, moveTabToNewGroup,
+  splitGroup, cycleTab, mruSwitch, serializeEditor, deserializeEditor,
+} from './ide/editor'
+import ContextMenu from './ide/ContextMenu'
+import Breadcrumb from './ide/Breadcrumb'
+import SecondaryBar from './ide/SecondaryBar'
+import { parseSymbols } from './ide/symbols'
 import { IconSettings } from './ide/icons'
 import ActivityBar from './ide/ActivityBar'
 import Sidebar from './ide/Sidebar'
@@ -90,11 +99,19 @@ function Drawer({ open, onClose, activeTab, openFile, onTabChange, onOpenFile, r
 }
 
 export default function IDEApp({ initialQuotes = [], initialMemes = [], initialCommits = [], repos, stack, fileTree = [], fileContents, readmeContent }) {
-  const [activeTab,      setActiveTab]      = useState('readme')
+  // Editor groups model (VS Code "editor groups"). One state object drives every
+  // open tab + split; pure reducers in ./ide/editor.js mutate it immutably.
+  const [editor,         setEditor]         = useState(initialEditorState)
   const [activityActive, setActivityActive] = useState('explorer')
   const [bottomTab,      setBottomTab]      = useState('terminal')
   const [drawerOpen,     setDrawerOpen]     = useState(false)
   const [sheetOpen,      setSheetOpen]      = useState(false)
+  const [zenMode,        setZenMode]        = useState(false)
+
+  // Derived back-compat values for the parts not (yet) group-aware.
+  const activeTabObj  = activeTabOf(editor)
+  const activeTab     = activeTabObj ? (activeTabObj.kind === 'file' ? 'file' : activeTabObj.kind) : 'readme'
+  const openFile      = activeTabObj?.kind === 'file' ? activeTabObj.file : null
 
   // ── Workbench layout: terminals (split groups), panel, sidebar — persisted ─
   // A terminal "group" is a split: { id, name, panes: number[] }.
@@ -107,6 +124,8 @@ export default function IDEApp({ initialQuotes = [], initialMemes = [], initialC
   const [panelCollapsed,   setPanelCollapsed]   = useState(false)
   const [sidebarWidth,     setSidebarWidth]     = useState(240)
   const [sidebarVisible,   setSidebarVisible]   = useState(true)
+  const [secondaryVisible, setSecondaryVisible] = useState(false)
+  const [secondaryWidth,   setSecondaryWidth]   = useState(300)
 
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [paletteMode, setPaletteMode] = useState('files')
@@ -119,10 +138,12 @@ export default function IDEApp({ initialQuotes = [], initialMemes = [], initialC
   const activeTerminalIdRef = useRef(activeTerminalId)
   const panelHeightRef      = useRef(panelHeight)
   const sidebarWidthRef     = useRef(sidebarWidth)
+  const secondaryWidthRef   = useRef(secondaryWidth)
   useEffect(() => { terminalsRef.current        = terminals        }, [terminals])
   useEffect(() => { activeTerminalIdRef.current = activeTerminalId }, [activeTerminalId])
   useEffect(() => { panelHeightRef.current      = panelHeight      }, [panelHeight])
   useEffect(() => { sidebarWidthRef.current     = sidebarWidth     }, [sidebarWidth])
+  useEffect(() => { secondaryWidthRef.current   = secondaryWidth   }, [secondaryWidth])
 
   // Hydrate persisted workbench layout once, after mount.
   useEffect(() => {
@@ -133,6 +154,8 @@ export default function IDEApp({ initialQuotes = [], initialMemes = [], initialC
     if (typeof w.panelCollapsed === 'boolean') setPanelCollapsed(w.panelCollapsed)
     if (typeof w.sidebarWidth === 'number')    setSidebarWidth(w.sidebarWidth)
     if (typeof w.sidebarVisible === 'boolean') setSidebarVisible(w.sidebarVisible)
+    if (typeof w.secondaryVisible === 'boolean') setSecondaryVisible(w.secondaryVisible)
+    if (typeof w.secondaryWidth === 'number')    setSecondaryWidth(w.secondaryWidth)
     if (Array.isArray(w.terminals) && w.terminals.length) {
       const valid = w.terminals.filter(t => t && Array.isArray(t.panes) && t.panes.length)
       if (valid.length) {
@@ -142,15 +165,16 @@ export default function IDEApp({ initialQuotes = [], initialMemes = [], initialC
         setActiveTerminalId(valid.some(t => t.id === w.activeTerminalId) ? w.activeTerminalId : valid.at(-1).id)
       }
     }
+    if (w.editor) { const restored = deserializeEditor(w.editor); if (restored) setEditor(restored) }
   }, [])
 
   // Persist on change (skip the initial commit so we don't clobber storage).
   const firstWriteRef = useRef(true)
   useEffect(() => {
     if (firstWriteRef.current) { firstWriteRef.current = false; return }
-    const data = { terminals, activeTerminalId, panelHeight, panelMaximized, panelCollapsed, sidebarWidth, sidebarVisible }
+    const data = { terminals, activeTerminalId, panelHeight, panelMaximized, panelCollapsed, sidebarWidth, sidebarVisible, secondaryVisible, secondaryWidth, editor: serializeEditor(editor) }
     try { localStorage.setItem('ide-workbench', JSON.stringify(data)) } catch {}
-  }, [terminals, activeTerminalId, panelHeight, panelMaximized, panelCollapsed, sidebarWidth, sidebarVisible])
+  }, [terminals, activeTerminalId, panelHeight, panelMaximized, panelCollapsed, sidebarWidth, sidebarVisible, secondaryVisible, secondaryWidth, editor])
 
   const addTerminal = useCallback(() => {
     const id = termIdRef.current++
@@ -223,8 +247,24 @@ export default function IDEApp({ initialQuotes = [], initialMemes = [], initialC
     window.addEventListener('pointerup', onUp)
   }, [])
 
-  const [openFile,      setOpenFile]      = useState(null)
-  const [openFileLine,  setOpenFileLine]  = useState(null)
+  // Secondary side bar lives on the right; dragging its left edge leftward widens it.
+  const startSecondaryResize = useCallback((e) => {
+    e.preventDefault()
+    const startX = e.clientX
+    const startW = secondaryWidthRef.current
+    document.body.style.cursor = 'col-resize'
+    document.body.style.userSelect = 'none'
+    const onMove = (ev) => setSecondaryWidth(Math.min(Math.max(startW + (startX - ev.clientX), 220), 520))
+    const onUp = () => {
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onUp)
+      document.body.style.cursor = ''
+      document.body.style.userSelect = ''
+    }
+    window.addEventListener('pointermove', onMove)
+    window.addEventListener('pointerup', onUp)
+  }, [])
+
   const [memeTabViewed, setMemeTabViewed] = useState(false)
 
   const ideRootRef      = useRef(null)
@@ -315,11 +355,36 @@ export default function IDEApp({ initialQuotes = [], initialMemes = [], initialC
     }
   }, [commitsFetched])
 
-  const handleOpenFile = useCallback((filepath, line) => {
-    setOpenFile(filepath)
-    setOpenFileLine(line || null)
-    setActiveTab('file')
+  // ── Editor group actions ──────────────────────────────────────────────────
+  const openEditor = useCallback((spec, opts = {}) => {
+    setEditor(e => openInGroup(e, spec, opts))
   }, [])
+  // Files open as a reused *preview* tab by default; pass { preview:false } to pin
+  // it open (double-click / drag-from-explorer behavior).
+  const handleOpenFile = useCallback((filepath, line, opts = {}) => {
+    openEditor({ kind: 'file', file: filepath, line }, { preview: opts.preview ?? true, groupId: opts.groupId })
+  }, [openEditor])
+  // The fixed README/memes/quotes/settings editors open as permanent tabs.
+  const openKind = useCallback((kind, opts = {}) => {
+    openEditor({ kind }, { preview: opts.preview ?? false, groupId: opts.groupId })
+  }, [openEditor])
+
+  const selectTab    = useCallback((groupId, tabId) => setEditor(e => setActiveTab(e, groupId, tabId)), [])
+  const closeTabH    = useCallback((groupId, tabId) => setEditor(e => closeTab(e, groupId, tabId)), [])
+  const closeOthersH = useCallback((groupId, tabId) => setEditor(e => closeOthers(e, groupId, tabId)), [])
+  const closeAllH    = useCallback((groupId)        => setEditor(e => closeAll(e, groupId)), [])
+  const pinH         = useCallback((groupId, tabId, pinned) => setEditor(e => setPinned(e, groupId, tabId, pinned)), [])
+  const moveTabH     = useCallback((fromG, tabId, toG, idx) => setEditor(e => moveTab(e, fromG, tabId, toG, idx)), [])
+  const splitTabOut  = useCallback((fromG, tabId, afterG)   => setEditor(e => moveTabToNewGroup(e, fromG, tabId, afterG)), [])
+  const promoteTab   = useCallback((groupId, tabId) => setEditor(e => ({ ...e, groups: e.groups.map(g => g.id === groupId ? { ...g, tabs: g.tabs.map(t => t.id === tabId ? { ...t, preview: false } : t) } : g) })), [])
+  const splitEditor  = useCallback(() => setEditor(e => splitGroup(e)), [])
+  const focusGroupH  = useCallback((groupId) => setEditor(e => focusGroup(e, groupId)), [])
+
+  // Tab drag-and-drop payload + right-click context menu state.
+  const tabDragRef = useRef(null)                       // { groupId, tabId }
+  const [tabDragging, setTabDragging] = useState(false)
+  const [tabMenu, setTabMenu]         = useState(null)  // { groupId, tabId, x, y }
+  const [tabListMenu, setTabListMenu] = useState(null)  // { groupId, x, y }
 
   const refillMemeQueue = useCallback(async () => {
     try {
@@ -406,76 +471,157 @@ export default function IDEApp({ initialQuotes = [], initialMemes = [], initialC
     fetchCommits()
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const breadcrumb = activeTab === 'settings'
-    ? 'settings.json'
-    : activeTab === 'file' && openFile
-    ? openFile
-    : TABS.find(t => t.id === activeTab)?.label || 'README.md'
+  // The memes feed shows full-res only once its editor has been viewed.
+  useEffect(() => { if (activeTab === 'memes') setMemeTabViewed(true) }, [activeTab])
+
+  // Per-tab breadcrumb label.
+  const breadcrumbFor = (tab) => {
+    if (!tab) return 'README.md'
+    if (tab.kind === 'settings') return 'settings.json'
+    if (tab.kind === 'file') return tab.file
+    return TABS.find(t => t.id === tab.kind)?.label || 'README.md'
+  }
 
   const handleActivitySelect = (id) => {
     // Clicking the already-active view toggles the side bar (VS Code behavior).
     if (id === activityActive && id !== 'settings') { setSidebarVisible(v => !v); return }
     if (id === 'git' && !commitsFetched) fetchCommits()
-    if (id === 'settings') setActiveTab('settings')
+    if (id === 'settings') openKind('settings')
     setSidebarVisible(true)
     setActivityActive(id)
   }
 
-  const handleCycleTab = () => {
-    const ids = TABS.map(t => t.id)
-    const idx = ids.indexOf(activeTab)
-    setActiveTab(ids[(idx + 1) % ids.length])
-    setOpenFile(null)
-  }
+  const handleCycleTab = useCallback(() => setEditor(e => cycleTab(e, 1)), [])
 
   const closeActiveEditor = useCallback(() => {
-    if (openFile) { setActiveTab('readme'); setOpenFile(null) }
-    else if (activeTab === 'settings') { setActiveTab('readme'); setActivityActive('explorer') }
-  }, [openFile, activeTab])
+    setEditor(e => { const g = activeGroupOf(e); return g ? closeTab(e, g.id, g.activeTabId) : e })
+  }, [])
+  const closeActiveGroup = useCallback(() => setEditor(e => closeGroup(e, e.activeGroupId)), [])
+  const focusGroupIdx    = useCallback((i) => setEditor(e => focusGroupByIndex(e, i)), [])
+  const cycleTabH        = useCallback((d) => setEditor(e => cycleTab(e, d)), [])
+  const mruSwitchH       = useCallback(()  => setEditor(e => mruSwitch(e)), [])
+  const gotoLine         = useCallback((line) => { if (openFile) handleOpenFile(openFile, line, { preview: false }) }, [openFile, handleOpenFile])
 
   // ── Command Palette sources ───────────────────────────────────────────────
   const filePaths = useMemo(() => Object.keys(fileContents || {}), [fileContents])
+  const paletteSymbols = useMemo(() => openFile ? parseSymbols(openFile, fileContents?.[openFile] || '') : [], [openFile, fileContents])
   const paletteCommands = useMemo(() => [
     { id: 'term-new',     label: 'Terminal: Create New Terminal', hint: 'Ctrl+Shift+`', run: addTerminal },
     { id: 'term-split',   label: 'Terminal: Split Terminal',                            run: splitTerminal },
+    { id: 'split-editor', label: 'View: Split Editor',            hint: 'Ctrl+\\',      run: splitEditor },
+    { id: 'close-group',  label: 'View: Close Editor Group',       hint: 'Ctrl+K W',     run: closeActiveGroup },
+    { id: 'goto-symbol',  label: 'Go to Symbol in Editor…',        hint: 'Ctrl+Shift+O', run: () => openPalette('symbols') },
+    { id: 'goto-line',    label: 'Go to Line/Column…',             hint: 'Ctrl+G',       run: () => openPalette('goto') },
     { id: 'view-panel',   label: 'View: Toggle Panel',            hint: 'Ctrl+`',       run: () => setPanelCollapsed(c => !c) },
     { id: 'view-sidebar', label: 'View: Toggle Primary Side Bar', hint: 'Ctrl+B',       run: () => setSidebarVisible(v => !v) },
     { id: 'view-maxpanel',label: 'View: Toggle Maximized Panel',                        run: () => { setPanelMaximized(m => !m); setPanelCollapsed(false) } },
-    { id: 'pref-settings',label: 'Preferences: Open Settings',                          run: () => { setActiveTab('settings'); setActivityActive('settings') } },
-    { id: 'go-readme',    label: 'Go to File: README.md',                               run: () => { setActiveTab('readme'); setOpenFile(null) } },
-    { id: 'go-memes',     label: 'Go to File: memes.feed',                              run: () => { setActiveTab('memes'); setOpenFile(null); setMemeTabViewed(true) } },
-    { id: 'go-quotes',    label: 'Go to File: quotes.log',                              run: () => { setActiveTab('quotes'); setOpenFile(null) } },
+    { id: 'view-zen',     label: 'View: Toggle Zen Mode',         hint: 'Ctrl+K Z',     run: () => setZenMode(z => !z) },
+    { id: 'view-secondary', label: 'View: Toggle Secondary Side Bar (Chat)', hint: 'Ctrl+Alt+B', run: () => setSecondaryVisible(v => !v) },
+    { id: 'pref-settings',label: 'Preferences: Open Settings',                          run: () => { openKind('settings'); setActivityActive('settings') } },
+    { id: 'go-readme',    label: 'Go to File: README.md',                               run: () => openKind('readme') },
+    { id: 'go-memes',     label: 'Go to File: memes.feed',                              run: () => openKind('memes') },
+    { id: 'go-quotes',    label: 'Go to File: quotes.log',                              run: () => openKind('quotes') },
     ...Object.keys(THEMES).map(name => ({ id: `theme-${name}`, label: `Preferences: Color Theme — ${name}`, run: () => setSetting('workbench.colorTheme', name) })),
     { id: 'net-log',      label: 'Network: Toggle Request Log',                         run: () => setSetting('network.showLog', !settings['network.showLog']) },
-  ], [addTerminal, splitTerminal, setSetting, settings])
+  ], [addTerminal, splitTerminal, splitEditor, closeActiveGroup, openPalette, openKind, setSetting, settings])
 
-  // ── Global keybindings (VS Code-style) ────────────────────────────────────
+  // ── Global keybindings (VS Code-style, incl. Ctrl+K chords) ───────────────
+  const chordRef   = useRef(0)  // timestamp of a pending Ctrl+K
+  const lastEscRef = useRef(0)  // for double-Esc to exit Zen
   useEffect(() => {
     const onKey = (e) => {
+      const k = e.key.length === 1 ? e.key.toLowerCase() : e.key
+
+      // Double-Esc exits Zen mode.
+      if (k === 'Escape') {
+        if (zenMode) {
+          const now = Date.now()
+          if (now - lastEscRef.current < 500) { setZenMode(false); lastEscRef.current = 0 }
+          else lastEscRef.current = now
+        }
+        return
+      }
+
+      // Second key of a Ctrl+K chord.
+      if (chordRef.current && Date.now() - chordRef.current < 1500) {
+        chordRef.current = 0
+        if (k === 'z') { e.preventDefault(); setZenMode(z => !z); return }
+        if (k === 'w') { e.preventDefault(); closeActiveGroup(); return }
+      }
+
       if (!(e.ctrlKey || e.metaKey)) return
-      const key = e.key.length === 1 ? e.key.toLowerCase() : e.key
-      switch (key) {
-        case 'p':       e.preventDefault(); openPalette(e.shiftKey ? 'commands' : 'files'); break
-        case '`':       e.preventDefault(); setPanelCollapsed(c => !c); setBottomTab('terminal'); break
-        case '~':       e.preventDefault(); addTerminal(); break // Ctrl+Shift+`
-        case 'j':       e.preventDefault(); setPanelCollapsed(c => !c); break
-        case 'b':       e.preventDefault(); setSidebarVisible(v => !v); break
-        case 'w':       if (openFile || activeTab === 'settings') { e.preventDefault(); closeActiveEditor() } break
+
+      if (k === 'k')              { e.preventDefault(); chordRef.current = Date.now(); return }
+      if (k === 'b' && e.altKey)  { e.preventDefault(); setSecondaryVisible(v => !v); return }
+
+      switch (k) {
+        case 'p':        e.preventDefault(); openPalette(e.shiftKey ? 'commands' : 'files'); break
+        case 'g':        e.preventDefault(); openPalette('goto'); break
+        case 'o':        if (e.shiftKey) { e.preventDefault(); openPalette('symbols') } break
+        case '`':        e.preventDefault(); setPanelCollapsed(c => !c); setBottomTab('terminal'); break
+        case '~':        e.preventDefault(); addTerminal(); break // Ctrl+Shift+`
+        case 'j':        e.preventDefault(); setPanelCollapsed(c => !c); break
+        case 'b':        e.preventDefault(); setSidebarVisible(v => !v); break
+        case '\\':       e.preventDefault(); splitEditor(); break
+        case 'w':        e.preventDefault(); closeActiveEditor(); break
+        case 'Tab':      e.preventDefault(); mruSwitchH(); break
+        case 'PageUp':   e.preventDefault(); cycleTabH(-1); break
+        case 'PageDown': e.preventDefault(); cycleTabH(1); break
+        case '1':        e.preventDefault(); focusGroupIdx(0); break
+        case '2':        e.preventDefault(); focusGroupIdx(1); break
+        case '3':        e.preventDefault(); focusGroupIdx(2); break
         default: break
       }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [openPalette, addTerminal, closeActiveEditor, openFile, activeTab])
+  }, [openPalette, addTerminal, splitEditor, closeActiveEditor, closeActiveGroup, focusGroupIdx, cycleTabH, mruSwitchH, zenMode])
+
+  // ── Per-tab presentation + content ────────────────────────────────────────
+  const tabMeta = (tab) => {
+    if (tab.kind === 'file')     return { label: tab.file.split('/').pop(), color: getFileColor(tab.file) }
+    if (tab.kind === 'settings') return { label: 'settings.json', settings: true }
+    const t = TABS.find(x => x.id === tab.kind)
+    return { label: t?.label || tab.kind, color: t?.color }
+  }
+
+  const renderTabContent = (tab, active) => {
+    switch (tab.kind) {
+      case 'readme':   return readmeContent ?? <ReadmeEditor repos={repos} stack={stack} />
+      case 'memes':    return (
+        <MemesEditor
+          memeUrl={memeUrl} memeLoading={memeLoading} onNext={fetchMeme}
+          autoPlay={settings['memes.autoPlay']}
+          interval={settings['memes.interval']}
+          onAutoPlayChange={v => setSetting('memes.autoPlay', v)}
+          onIntervalChange={v => setSetting('memes.interval', v)}
+        />
+      )
+      case 'quotes':   return <QuotesEditor quote={quote} loading={quoteLoading} onNext={fetchQuote} />
+      case 'settings': return <SettingsUI settings={settings} setSetting={setSetting} />
+      case 'file':     return (
+        <CodeViewer
+          filename={tab.file}
+          content={fileContents?.[tab.file] || `// could not read ${tab.file}`}
+          scrollToLine={tab.line}
+          minimap={settings['editor.minimap']}
+          stickyScroll={settings['editor.stickyScroll']}
+          indentGuides={settings['editor.guides.indentation']}
+          active={active}
+        />
+      )
+      default: return null
+    }
+  }
 
   return (
-    <div className="ide-root" ref={ideRootRef}>
+    <div className={`ide-root${zenMode ? ' zen' : ''}`} ref={ideRootRef}>
       <MobileHeader
         activeTab={activeTab}
         openFile={openFile}
         onDrawer={() => setDrawerOpen(true)}
         onSheet={() => setSheetOpen(true)}
-        onSettings={() => { setActiveTab('settings'); setOpenFile(null) }}
+        onSettings={() => openKind('settings')}
       />
 
       <Drawer
@@ -483,7 +629,7 @@ export default function IDEApp({ initialQuotes = [], initialMemes = [], initialC
         onClose={() => setDrawerOpen(false)}
         activeTab={activeTab}
         openFile={openFile}
-        onTabChange={id => { setActiveTab(id); setOpenFile(null) }}
+        onTabChange={id => openKind(id)}
         onOpenFile={handleOpenFile}
         repos={repos}
         fileTree={fileTree}
@@ -498,14 +644,19 @@ export default function IDEApp({ initialQuotes = [], initialMemes = [], initialC
       />
 
       <div className="ide-main">
-        <ActivityBar active={activityActive} onSelect={handleActivitySelect} />
+        <ActivityBar
+          active={activityActive}
+          onSelect={handleActivitySelect}
+          secondaryActive={secondaryVisible}
+          onToggleSecondary={() => setSecondaryVisible(v => !v)}
+        />
         {sidebarVisible && (
           <div className="ide-sidebar-host" style={{ width: sidebarWidth }}>
             <Sidebar
               activityView={activityActive}
               activeTab={activeTab}
               openFile={openFile}
-              onTabChange={id => { setActiveTab(id); setOpenFile(null) }}
+              onTabChange={id => openKind(id)}
               onOpenFile={handleOpenFile}
               repos={repos}
               fileTree={fileTree}
@@ -514,6 +665,10 @@ export default function IDEApp({ initialQuotes = [], initialMemes = [], initialC
               commitsLoading={commitsLoading}
               settings={settings}
               fileContents={fileContents}
+              editorGroups={editor.groups}
+              activeGroupId={editor.activeGroupId}
+              onSelectTab={selectTab}
+              onCloseTab={closeTabH}
             />
             <div
               className="ide-sidebar-resize-handle"
@@ -526,63 +681,85 @@ export default function IDEApp({ initialQuotes = [], initialMemes = [], initialC
         )}
 
         <div className="ide-editor-center">
-        <div className="ide-editor-wrap">
-          <div className="ide-tab-bar">
-            {TABS.map(tab => (
+        <div className="ide-editor-groups">
+          {editor.groups.map(group => {
+            const gFocused = group.id === editor.activeGroupId
+            const aTab = group.tabs.find(t => t.id === group.activeTabId) || group.tabs[0]
+            return (
               <div
-                key={tab.id}
-                className={`ide-tab${activeTab === tab.id && !openFile ? ' active' : ''}`}
-                onClick={() => { setActiveTab(tab.id); setOpenFile(null); if (tab.id === 'memes') setMemeTabViewed(true) }}
-                onMouseEnter={() => { if (tab.id === 'memes' && memeUrl) { const img = new window.Image(); img.src = memeUrl } }}
+                key={group.id}
+                className={`ide-editor-group${gFocused ? ' focused' : ''}`}
+                onMouseDown={() => { if (!gFocused) focusGroupH(group.id) }}
               >
-                <span className="ide-tab-dot" style={{ background: tab.color }} />
-                {tab.label}
-                <span className="ide-tab-close">×</span>
-              </div>
-            ))}
-            {activeTab === 'settings' && (
-              <div className="ide-tab active">
-                <span style={{ display: 'flex', alignItems: 'center', marginRight: 4, opacity: 0.7 }}><IconSettings /></span>
-                settings.json
-                <span className="ide-tab-close" style={{ cursor: 'pointer' }}
-                  onClick={e => { e.stopPropagation(); setActiveTab('readme'); setActivityActive('explorer') }}>×</span>
-              </div>
-            )}
-            {activeTab === 'file' && openFile && (
-              <div className="ide-tab active">
-                <span className="ide-tab-dot" style={{ background: getFileColor(openFile) }} />
-                {openFile.split('/').pop()}
-                <span className="ide-tab-close" style={{ cursor: 'pointer' }}
-                  onClick={e => { e.stopPropagation(); setActiveTab('readme'); setOpenFile(null) }}>×</span>
-              </div>
-            )}
-          </div>
+                <div
+                  className="ide-tab-bar"
+                  onDragOver={e => { if (tabDragRef.current) e.preventDefault() }}
+                  onDrop={e => { const d = tabDragRef.current; if (d) { e.preventDefault(); moveTabH(d.groupId, d.tabId, group.id, group.tabs.length) } }}
+                >
+                  {group.tabs.map(tab => {
+                    const m = tabMeta(tab)
+                    const active = tab.id === group.activeTabId
+                    const dirty  = tab.kind === 'memes' || tab.kind === 'quotes'
+                    return (
+                      <div
+                        key={tab.id}
+                        className={`ide-tab${active ? ' active' : ''}${tab.preview ? ' preview' : ''}${tab.pinned ? ' pinned' : ''}${dirty ? ' dirty' : ''}`}
+                        draggable
+                        onDragStart={e => { tabDragRef.current = { groupId: group.id, tabId: tab.id }; setTabDragging(true); e.dataTransfer.effectAllowed = 'move' }}
+                        onDragEnd={() => { tabDragRef.current = null; setTabDragging(false) }}
+                        onDragOver={e => { if (tabDragRef.current) e.preventDefault() }}
+                        onDrop={e => { const d = tabDragRef.current; if (d) { e.preventDefault(); e.stopPropagation(); moveTabH(d.groupId, d.tabId, group.id, group.tabs.findIndex(t => t.id === tab.id)) } }}
+                        onClick={() => selectTab(group.id, tab.id)}
+                        onDoubleClick={() => promoteTab(group.id, tab.id)}
+                        onAuxClick={e => { if (e.button === 1) { e.preventDefault(); closeTabH(group.id, tab.id) } }}
+                        onContextMenu={e => { e.preventDefault(); selectTab(group.id, tab.id); setTabMenu({ groupId: group.id, tabId: tab.id, x: e.clientX, y: e.clientY }) }}
+                        onMouseEnter={() => { if (tab.kind === 'memes' && memeUrl) { const img = new window.Image(); img.src = memeUrl } }}
+                        title={tab.kind === 'file' ? tab.file : m.label}
+                      >
+                        {m.settings
+                          ? <span className="ide-tab-settings-ico"><IconSettings /></span>
+                          : <span className="ide-tab-dot" style={{ background: m.color }} />}
+                        <span className="ide-tab-label">{m.label}</span>
+                        <span
+                          className="ide-tab-close"
+                          title={tab.pinned ? 'Unpin' : 'Close'}
+                          onClick={e => { e.stopPropagation(); tab.pinned ? pinH(group.id, tab.id, false) : closeTabH(group.id, tab.id) }}
+                        />
+                      </div>
+                    )
+                  })}
+                  <div className="ide-tab-bar-spacer" />
+                  {group.tabs.length > 1 && (
+                    <button
+                      className="ide-tab-overflow"
+                      title="Open editors…"
+                      aria-label="Open editors"
+                      onClick={e => { e.stopPropagation(); setTabListMenu({ groupId: group.id, x: e.clientX, y: e.clientY }) }}
+                    >⌄</button>
+                  )}
+                </div>
 
-          <div className="ide-breadcrumb">
-            <span>tilalx</span>
-            <span className="ide-breadcrumb-sep">›</span>
-            <span className="ide-breadcrumb-active">{breadcrumb}</span>
-          </div>
+                <Breadcrumb
+                  tab={aTab}
+                  fileTree={fileTree}
+                  fileContents={fileContents}
+                  onOpenFile={handleOpenFile}
+                  fixedLabel={breadcrumbFor(aTab)}
+                />
 
-          {activeTab === 'readme'   && !openFile && (readmeContent ?? <ReadmeEditor repos={repos} stack={stack} />)}
-          {activeTab === 'memes'    && !openFile && (
-            <MemesEditor
-              memeUrl={memeUrl} memeLoading={memeLoading} onNext={fetchMeme}
-              autoPlay={settings['memes.autoPlay']}
-              interval={settings['memes.interval']}
-              onAutoPlayChange={v => setSetting('memes.autoPlay', v)}
-              onIntervalChange={v => setSetting('memes.interval', v)}
-            />
-          )}
-          {activeTab === 'quotes'   && !openFile && <QuotesEditor quote={quote} loading={quoteLoading} onNext={fetchQuote} />}
-          {activeTab === 'settings' && !openFile && <SettingsUI settings={settings} setSetting={setSetting} />}
-          {activeTab === 'file'     && openFile  && (
-            <CodeViewer
-              filename={openFile}
-              content={fileContents?.[openFile] || `// could not read ${openFile}`}
-              scrollToLine={openFileLine}
-            />
-          )}
+                {aTab && renderTabContent(aTab, gFocused)}
+
+                {/* Drop a dragged tab here to split it into a new group. */}
+                <div
+                  className="ide-group-dropzone"
+                  style={{ pointerEvents: tabDragging ? 'auto' : 'none' }}
+                  onDragOver={e => { if (tabDragRef.current) { e.preventDefault(); e.currentTarget.classList.add('over') } }}
+                  onDragLeave={e => e.currentTarget.classList.remove('over')}
+                  onDrop={e => { const d = tabDragRef.current; e.currentTarget.classList.remove('over'); if (d) { e.preventDefault(); splitTabOut(d.groupId, d.tabId, group.id) } }}
+                />
+              </div>
+            )
+          })}
         </div>
 
           <div
@@ -656,6 +833,7 @@ export default function IDEApp({ initialQuotes = [], initialMemes = [], initialC
                 onClosePane={closePane}
                 onRename={renameTerminal}
                 repos={repos} stack={stack} commits={commits} fileTree={fileTree}
+                themeVars={THEMES[settings['workbench.colorTheme']] || THEMES['Catppuccin Mocha']}
               />
             </div>
           </div>
@@ -671,9 +849,17 @@ export default function IDEApp({ initialQuotes = [], initialMemes = [], initialC
             networkLog={networkLog} showLog={settings['network.showLog']}
           />
         </div>
+
+        {secondaryVisible && (
+          <SecondaryBar
+            width={secondaryWidth}
+            onResizeStart={startSecondaryResize}
+            onClose={() => setSecondaryVisible(false)}
+          />
+        )}
       </div>
 
-      <MobileNav activeTab={activeTab} onTabChange={id => { setActiveTab(id); setOpenFile(null) }} />
+      <MobileNav activeTab={activeTab} onTabChange={id => openKind(id)} />
 
       <StatusBar
         tab={activeTab}
@@ -691,9 +877,52 @@ export default function IDEApp({ initialQuotes = [], initialMemes = [], initialC
         initialMode={paletteMode}
         files={filePaths}
         commands={paletteCommands}
+        symbols={paletteSymbols}
         onOpenFile={handleOpenFile}
+        onGotoLine={gotoLine}
         onClose={() => setPaletteOpen(false)}
       />
+
+      {tabMenu && (() => {
+        const grp = editor.groups.find(g => g.id === tabMenu.groupId)
+        const tab = grp?.tabs.find(t => t.id === tabMenu.tabId)
+        if (!tab) return null
+        const isFile = tab.kind === 'file'
+        return (
+          <ContextMenu
+            x={tabMenu.x} y={tabMenu.y}
+            onClose={() => setTabMenu(null)}
+            items={[
+              { label: 'Close', hint: 'Ctrl+W', onClick: () => closeTabH(tabMenu.groupId, tabMenu.tabId) },
+              { label: 'Close Others', disabled: grp.tabs.length <= 1, onClick: () => closeOthersH(tabMenu.groupId, tabMenu.tabId) },
+              { label: 'Close All', onClick: () => closeAllH(tabMenu.groupId) },
+              { sep: true },
+              { label: tab.pinned ? 'Unpin' : 'Pin', onClick: () => pinH(tabMenu.groupId, tabMenu.tabId, !tab.pinned) },
+              { label: 'Split Editor', hint: 'Ctrl+\\', onClick: () => splitTabOut(tabMenu.groupId, tabMenu.tabId, tabMenu.groupId) },
+              ...(isFile ? [
+                { sep: true },
+                { label: 'Copy Path', onClick: () => { try { navigator.clipboard?.writeText(tab.file) } catch {} } },
+                { label: 'Reveal in Explorer', onClick: () => { setActivityActive('explorer'); setSidebarVisible(true) } },
+              ] : []),
+            ]}
+          />
+        )
+      })()}
+
+      {tabListMenu && (() => {
+        const grp = editor.groups.find(g => g.id === tabListMenu.groupId)
+        if (!grp) return null
+        return (
+          <ContextMenu
+            x={tabListMenu.x} y={tabListMenu.y}
+            onClose={() => setTabListMenu(null)}
+            items={grp.tabs.map(t => ({
+              label: tabMeta(t).label,
+              onClick: () => selectTab(grp.id, t.id),
+            }))}
+          />
+        )
+      })()}
     </div>
   )
 }

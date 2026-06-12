@@ -2,9 +2,20 @@
 
 import { useState, useMemo, useRef, useEffect } from 'react'
 import { TABS, LANG_COLORS } from './constants'
-import { timeAgo, repoStatusColor } from './utils'
-import { IconChevron, IconFork, FileItemIcon } from './icons'
+import { timeAgo, repoStatusColor, getFileColor } from './utils'
+import { IconChevron, IconFork, FileItemIcon, IconSettings } from './icons'
 import { SettingsSidebarHint } from './SettingsUI'
+import { parseSymbols } from './symbols'
+
+// Tab → { label, color, settings } for the Open Editors list.
+function tabMetaSidebar(t) {
+  if (t.kind === 'file')     return { label: t.file.split('/').pop(), color: getFileColor(t.file) }
+  if (t.kind === 'settings') return { label: 'settings.json', settings: true }
+  const meta = TABS.find(x => x.id === t.kind)
+  return { label: meta?.label || t.kind, color: meta?.color }
+}
+
+const SYMBOL_GLYPH = { heading: 'H', function: 'ƒ', class: 'C', component: '⬡', const: 'v', key: '{}' }
 
 const OUTLINE = [
   { level: 'h1', text: "Hi, I'm Tilo Alexander", anchor: null        },
@@ -77,7 +88,7 @@ function SearchHighlight({ text, query }) {
   )
 }
 
-function ExplorerPanel({ activeTab, openFile, onTabChange, onOpenFile, repos, fileTree = [] }) {
+function ExplorerPanel({ activeTab, openFile, onTabChange, onOpenFile, repos, fileTree = [], fileContents, editorGroups, activeGroupId, onSelectTab, onCloseTab }) {
   const [sections, setSections] = useState({ openEditors: true, files: true, repos: true, outline: true })
   const toggle = key => setSections(s => ({ ...s, [key]: !s[key] }))
   const activeFile = openFile || TABS.find(t => t.id === activeTab)?.label || 'README.md'
@@ -91,7 +102,29 @@ function ExplorerPanel({ activeTab, openFile, onTabChange, onOpenFile, repos, fi
           <IconChevron open={sections.openEditors} />
           Open Editors
         </div>
-        {sections.openEditors && TABS.map(tab => (
+        {sections.openEditors && (editorGroups?.length ? editorGroups.map((g, gi) => (
+          <div key={g.id}>
+            {editorGroups.length > 1 && <div className="ide-open-editors-group">GROUP {gi + 1}</div>}
+            {g.tabs.map(t => {
+              const meta = tabMetaSidebar(t)
+              const active = g.id === activeGroupId && t.id === g.activeTabId
+              return (
+                <div
+                  key={t.id}
+                  className={`ide-file-item ide-open-editor${active ? ' active' : ''}`}
+                  style={{ paddingLeft: 20 }}
+                  onClick={() => onSelectTab?.(g.id, t.id)}
+                >
+                  {meta.settings
+                    ? <span className="ide-oe-ico"><IconSettings /></span>
+                    : <span className="ide-file-dot" style={{ background: meta.color }} />}
+                  <span className={`ide-oe-label${t.preview ? ' preview' : ''}`}>{meta.label}</span>
+                  <span className="ide-oe-close" title="Close" onClick={e => { e.stopPropagation(); onCloseTab?.(g.id, t.id) }}>×</span>
+                </div>
+              )
+            })}
+          </div>
+        )) : TABS.map(tab => (
           <div
             key={tab.id}
             className={`ide-file-item${activeTab === tab.id && !openFile ? ' active' : ''}`}
@@ -101,7 +134,7 @@ function ExplorerPanel({ activeTab, openFile, onTabChange, onOpenFile, repos, fi
             <span className="ide-file-dot" style={{ background: tab.color }} />
             <span>{tab.label}</span>
           </div>
-        ))}
+        )))}
       </div>
 
       <div className="ide-section">
@@ -163,24 +196,45 @@ function ExplorerPanel({ activeTab, openFile, onTabChange, onOpenFile, repos, fi
           <IconChevron open={sections.outline} />
           Outline
         </div>
-        {sections.outline && OUTLINE.map((item, i) => (
-          <div
-            key={i}
-            className={`ide-outline-item ${item.level}`}
-            style={{ cursor: 'pointer' }}
-            onClick={() => {
-              onTabChange('readme')
-              if (item.anchor) {
-                setTimeout(() => {
-                  document.getElementById(item.anchor)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-                }, 50)
-              }
-            }}
-          >
-            <span style={{ color: '#45475a', fontSize: 9, fontWeight: 700, flexShrink: 0 }}>{item.level.toUpperCase()}</span>
-            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.text}</span>
-          </div>
-        ))}
+        {sections.outline && (() => {
+          // File editor: live symbols. README: its markdown anchors. Else: empty.
+          if (openFile) {
+            const syms = parseSymbols(openFile, fileContents?.[openFile] || '')
+            if (!syms.length) return <div className="ide-search-empty">No symbols found</div>
+            return syms.map((s, i) => (
+              <div
+                key={i}
+                className="ide-outline-item"
+                style={{ cursor: 'pointer', paddingLeft: 8 + ((s.level || 1) - 1) * 12 }}
+                onClick={() => onOpenFile?.(openFile, s.line)}
+              >
+                <span className="ide-outline-kind">{SYMBOL_GLYPH[s.kind] || '•'}</span>
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.name}</span>
+              </div>
+            ))
+          }
+          if (activeTab === 'readme') {
+            return OUTLINE.map((item, i) => (
+              <div
+                key={i}
+                className={`ide-outline-item ${item.level}`}
+                style={{ cursor: 'pointer' }}
+                onClick={() => {
+                  onTabChange('readme')
+                  if (item.anchor) {
+                    setTimeout(() => {
+                      document.getElementById(item.anchor)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                    }, 50)
+                  }
+                }}
+              >
+                <span style={{ color: '#45475a', fontSize: 9, fontWeight: 700, flexShrink: 0 }}>{item.level.toUpperCase()}</span>
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.text}</span>
+              </div>
+            ))
+          }
+          return <div className="ide-search-empty">No symbols found</div>
+        })()}
       </div>
     </div>
   )
@@ -404,10 +458,16 @@ function ExtensionsPanel({ repos, stack }) {
   )
 }
 
-export default function Sidebar({ activityView, activeTab, openFile, onTabChange, onOpenFile, repos, fileTree, stack, commits, commitsLoading, settings, fileContents }) {
+export default function Sidebar({ activityView, activeTab, openFile, onTabChange, onOpenFile, repos, fileTree, stack, commits, commitsLoading, settings, fileContents, editorGroups, activeGroupId, onSelectTab, onCloseTab }) {
   if (activityView === 'search')     return <SearchPanel repos={repos} stack={stack} onTabChange={onTabChange} fileContents={fileContents} onOpenFile={onOpenFile} />
   if (activityView === 'git')        return <SourceControlPanel commits={commits} loading={commitsLoading} />
   if (activityView === 'extensions') return <ExtensionsPanel repos={repos} stack={stack} />
   if (activityView === 'settings')   return <SettingsSidebarHint settings={settings} />
-  return <ExplorerPanel activeTab={activeTab} openFile={openFile} onTabChange={onTabChange} onOpenFile={onOpenFile} repos={repos} fileTree={fileTree} />
+  return (
+    <ExplorerPanel
+      activeTab={activeTab} openFile={openFile} onTabChange={onTabChange} onOpenFile={onOpenFile}
+      repos={repos} fileTree={fileTree} fileContents={fileContents}
+      editorGroups={editorGroups} activeGroupId={activeGroupId} onSelectTab={onSelectTab} onCloseTab={onCloseTab}
+    />
+  )
 }
