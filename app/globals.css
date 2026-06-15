@@ -201,7 +201,6 @@ body {
   color: var(--ide-muted);
 }
 .ide-open-editor { align-items: center; gap: 6px; }
-.ide-oe-ico { display: flex; align-items: center; opacity: 0.75; }
 .ide-oe-label { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ide-oe-label.preview { font-style: italic; }
 .ide-oe-close {
@@ -259,19 +258,20 @@ body {
 
 /* ── Secondary side bar (Chat) ── */
 .ide-secondary-bar {
-  position: relative;
-  flex-shrink: 0;
+  position: fixed;
+  bottom: 34px; /* sit just above the status bar */
+  right: 14px;
+  width: 380px;
+  max-height: min(600px, calc(100vh - 80px));
+  z-index: 200;
   background: var(--ide-bg2);
-  border-left: 1px solid var(--ide-border);
+  border: 1px solid var(--ide-border);
+  border-radius: 10px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.55), 0 2px 8px rgba(0,0,0,0.3);
   display: flex;
   flex-direction: column;
   overflow: hidden;
 }
-.ide-secondary-resize {
-  position: absolute; top: 0; left: -2px; bottom: 0;
-  width: 5px; cursor: col-resize; z-index: 5;
-}
-.ide-secondary-resize:hover { background: var(--ide-accent); }
 .ide-secondary-head {
   display: flex; align-items: center; justify-content: space-between;
   height: 35px; flex-shrink: 0;
@@ -291,21 +291,13 @@ body {
 .ide-chat-msg { display: flex; gap: 8px; font-size: 12px; line-height: 1.5; }
 .ide-chat-msg.user { flex-direction: row-reverse; text-align: right; }
 .ide-chat-role { flex-shrink: 0; font-size: 11px; color: var(--ide-muted); padding-top: 1px; }
-.ide-chat-text {
-  background: var(--ide-bg3);
-  border: 1px solid var(--ide-border);
-  border-radius: 8px;
-  padding: 7px 10px;
-  color: var(--ide-fg);
-  max-width: 85%;
-}
-.ide-chat-msg.user .ide-chat-text { background: color-mix(in srgb, var(--ide-accent) 22%, var(--ide-bg3)); }
 .ide-chat-input-row {
   display: flex; gap: 6px; align-items: flex-end;
   padding: 8px; border-top: 1px solid var(--ide-border);
+  flex-shrink: 0;
 }
 .ide-chat-input {
-  flex: 1; resize: none;
+  flex: 1; min-width: 0; resize: none; box-sizing: border-box;
   background: var(--ide-bg3);
   border: 1px solid var(--ide-border);
   border-radius: 6px;
@@ -322,7 +314,137 @@ body {
 }
 .ide-chat-send:disabled { opacity: 0.4; cursor: default; }
 
-@media (max-width: 900px) { .ide-secondary-bar { display: none; } }
+/* AI model load / status states */
+.ide-chat-loading { padding: 10px 12px; border-top: 1px solid var(--ide-border); display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; }
+.ide-chat-load-btn {
+  width: 100%;
+  background: var(--ide-accent); color: #11111b;
+  border: none; border-radius: 6px;
+  padding: 9px 12px; font-size: 12px; font-weight: 600; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+}
+.ide-chat-load-btn:hover { filter: brightness(1.08); }
+.ide-chat-load-sub { font-weight: 400; opacity: 0.7; }
+.ide-chat-progress {
+  height: 6px; border-radius: 999px; overflow: hidden;
+  background: var(--ide-bg3); border: 1px solid var(--ide-border);
+}
+.ide-chat-progress-bar { height: 100%; background: var(--ide-accent); border-radius: 999px; transition: width 0.2s ease; }
+.ide-chat-progress-text { font-size: 11px; color: var(--ide-muted); line-height: 1.4; }
+.ide-chat-notice {
+  padding: 10px 12px; border-top: 1px solid var(--ide-border);
+  font-size: 11.5px; line-height: 1.5; color: var(--ide-fg2); flex-shrink: 0;
+}
+.ide-chat-notice-error { border-top: none; padding: 0; color: #e78284; }
+.ide-chat-caret {
+  display: inline-block; width: 6px; height: 13px; margin-left: 2px;
+  background: var(--ide-accent); border-radius: 1px; vertical-align: text-bottom;
+  animation: ide-chat-blink 1s step-start infinite;
+}
+@keyframes ide-chat-blink { 50% { opacity: 0; } }
+
+/* Message body wrapper (assistant messages use div for block-level markdown) */
+.ide-chat-msg-body { flex: 1; min-width: 0; }
+
+/* Override old span-based chat-text to be block-level for assistant */
+.ide-chat-text {
+  display: block;
+  background: var(--ide-bg3);
+  border: 1px solid var(--ide-border);
+  border-radius: 8px;
+  padding: 7px 10px;
+  color: var(--ide-fg);
+  max-width: 85%;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.ide-chat-text-user { background: color-mix(in srgb, var(--ide-accent) 22%, var(--ide-bg3)); display: inline-block; }
+
+/* Markdown paragraphs inside assistant messages */
+.ide-chat-text .ide-chat-p { margin: 0 0 6px; }
+.ide-chat-text .ide-chat-p:last-child { margin-bottom: 0; }
+
+/* Inline code */
+.ide-chat-inline-code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  background: #181825;
+  border: 1px solid #313244;
+  border-radius: 4px;
+  padding: 1px 5px;
+  color: #cba6f7;
+}
+
+/* Fenced code block (no language) */
+.ide-chat-code-block {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  background: #11111b;
+  border: 1px solid #313244;
+  border-radius: 6px;
+  padding: 10px 12px;
+  overflow-x: auto;
+  margin: 6px 0;
+  white-space: pre;
+  color: var(--ide-fg);
+}
+.ide-chat-code-block code { font-family: inherit; background: none; border: none; padding: 0; }
+
+/* Links in chat */
+.ide-chat-link { color: var(--ide-accent); text-decoration: underline; text-underline-offset: 2px; }
+.ide-chat-link:hover { opacity: 0.85; }
+
+/* Images in chat */
+.ide-chat-img {
+  max-width: 100%; height: auto;
+  border-radius: 6px; border: 1px solid var(--ide-border);
+  margin: 4px 0; display: block;
+}
+
+/* Skill chips */
+.ide-chat-skills {
+  display: flex; flex-wrap: wrap; gap: 5px;
+  padding: 6px 8px 2px; flex-shrink: 0;
+}
+.ide-chat-skills-inline { padding: 0; }
+.ide-chat-skill-btn {
+  background: var(--ide-bg3); border: 1px solid var(--ide-border);
+  border-radius: 999px; padding: 3px 10px;
+  font-size: 11px; color: var(--ide-fg2); cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+.ide-chat-skill-btn:hover { border-color: var(--ide-accent); color: var(--ide-fg); }
+
+/* Fetching status bar */
+.ide-chat-fetching-bar {
+  padding: 4px 12px; font-size: 11px; color: var(--ide-muted);
+  border-top: 1px solid var(--ide-border); flex-shrink: 0;
+}
+
+
+.ide-chat-tool-call {
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--ide-muted);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.ide-chat-tool-url {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--ide-accent);
+  opacity: 0.8;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+@media (max-width: 600px) {
+  .ide-secondary-bar { right: 8px; left: 8px; width: auto; bottom: 52px; }
+}
 
 .ide-status-bar {
   height: 22px;
@@ -383,7 +505,6 @@ body {
 .ide-tab.active .ide-tab-close { color: var(--ide-muted); }
 .ide-tab-label { overflow: hidden; text-overflow: ellipsis; }
 .ide-tab.preview .ide-tab-label { font-style: italic; }
-.ide-tab-settings-ico { display: flex; align-items: center; opacity: 0.7; margin-right: 2px; }
 
 /* Close affordance: × by default; a ● dirty dot until hovered; a pin when pinned. */
 .ide-tab-close { cursor: pointer; border-radius: 4px; }
@@ -1062,6 +1183,77 @@ body {
    ============================================================ */
 
 /* ---- VS Code-style Settings ---- */
+/* Settings modal/popup overlay (opened from the activity-bar gear, Ctrl+,) */
+.ide-settings-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 16px;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(1.5px);
+  animation: ide-settings-fade 120ms ease-out;
+}
+.ide-settings-modal {
+  display: flex;
+  flex-direction: column;
+  width: min(920px, 100%);
+  height: min(680px, 100%);
+  background: var(--ide-editor-bg, var(--ide-bg));
+  border: 1px solid var(--ide-border);
+  border-radius: 8px;
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+  animation: ide-settings-pop 130ms ease-out;
+}
+.ide-settings-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  padding: 8px 8px 8px 14px;
+  border-bottom: 1px solid var(--ide-border);
+}
+.ide-settings-modal-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ide-fg);
+}
+.ide-settings-modal-close {
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--ide-fg-muted, #a6adc8);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+.ide-settings-modal-close:hover {
+  background: var(--ide-hover, rgba(255, 255, 255, 0.08));
+  color: var(--ide-fg);
+}
+.ide-settings-modal-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+@keyframes ide-settings-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes ide-settings-pop {
+  from { opacity: 0; transform: translateY(6px) scale(0.99); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
 .ide-settings-root {
   display: flex;
   flex-direction: column;
@@ -1518,21 +1710,49 @@ body {
   background-image: repeating-linear-gradient(90deg, rgba(255,255,255,0.05) 0, rgba(255,255,255,0.05) 1px, transparent 1px, transparent 2ch);
 }
 
-.ide-code-row.match { background: rgba(137,180,250,0.10); }
-.ide-code-row.match-current { background: rgba(249,226,175,0.22); }
+.ide-code-row.match { background: rgba(137,180,250,0.06); }
 
-/* Find widget */
+/* Active (cursor) line — VS Code line highlight */
+.ide-code-row.cursor-line { background: rgba(255,255,255,0.045); }
+.ide-code-row.cursor-line .ide-line-num { color: var(--ide-fg2); }
+
+/* Word wrap */
+.ide-code-body.wrap { white-space: pre-wrap; word-break: break-word; min-width: 0; }
+.ide-code-body.wrap .ide-line-code { white-space: pre-wrap; word-break: break-word; }
+
+/* Inline find matches */
+.ide-find-mark {
+  background: rgba(234,179,8,0.28);
+  border-radius: 2px;
+  color: inherit;
+  box-shadow: 0 0 0 1px rgba(234,179,8,0.45) inset;
+}
+.ide-find-mark.current {
+  background: rgba(249,115,22,0.55);
+  box-shadow: 0 0 0 1px rgba(249,115,22,0.9) inset;
+}
+
+/* Find / Replace widget */
 .ide-find-widget {
   position: absolute;
   top: 6px; right: 16px;
   z-index: 20;
-  display: flex; align-items: center; gap: 4px;
+  display: flex; align-items: flex-start; gap: 4px;
   background: var(--ide-bg2);
   border: 1px solid var(--ide-border);
   border-radius: 6px;
   padding: 4px 6px;
   box-shadow: 0 6px 20px rgba(0,0,0,0.45);
 }
+.ide-find-expand {
+  width: 16px; align-self: stretch;
+  background: none; border: none; border-radius: 4px;
+  color: var(--ide-fg2); cursor: pointer; font-size: 12px;
+  display: flex; align-items: center; justify-content: center;
+}
+.ide-find-expand:hover { background: rgba(255,255,255,0.08); color: var(--ide-fg); }
+.ide-find-rows { display: flex; flex-direction: column; gap: 4px; }
+.ide-find-row { display: flex; align-items: center; gap: 4px; }
 .ide-find-input {
   width: 170px;
   background: var(--ide-bg3);
@@ -1544,12 +1764,23 @@ body {
   outline: none;
 }
 .ide-find-input:focus { border-color: var(--ide-accent); }
+.ide-find-input.invalid { border-color: #f38ba8; }
+.ide-find-toggles { display: flex; gap: 2px; }
+.ide-find-toggle {
+  min-width: 22px; height: 22px;
+  background: none; border: none; border-radius: 4px;
+  color: var(--ide-fg2); cursor: pointer;
+  font: 11px/1 'JetBrains Mono', monospace; padding: 0 3px;
+}
+.ide-find-toggle:hover { background: rgba(255,255,255,0.08); color: var(--ide-fg); }
+.ide-find-toggle.on { background: rgba(137,180,250,0.25); color: var(--ide-fg); box-shadow: 0 0 0 1px var(--ide-accent) inset; }
 .ide-find-count { font-size: 11px; color: var(--ide-muted); min-width: 56px; text-align: center; }
 .ide-find-btn {
   width: 22px; height: 22px;
   background: none; border: none; border-radius: 4px;
   color: var(--ide-fg2); cursor: pointer; font-size: 12px;
 }
+.ide-find-btn.wide { width: auto; padding: 0 10px; font-size: 11px; }
 .ide-find-btn:hover:not(:disabled) { background: rgba(255,255,255,0.08); color: var(--ide-fg); }
 .ide-find-btn:disabled { opacity: 0.35; cursor: default; }
 

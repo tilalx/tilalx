@@ -36,7 +36,7 @@ export default function ActivityBar({ active, onSelect, secondaryActive, onToggl
         <IconChat />
       </button>
       <button
-        className={`ide-act-btn${active === 'settings' ? ' active' : ''}`}
+        className="ide-act-btn"
         style={{ marginBottom: 4 }}
         title="settings"
         onClick={() => onSelect('settings')}

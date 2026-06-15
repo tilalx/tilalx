@@ -2,7 +2,7 @@
 
 import { getFileType } from './utils'
 
-export default function StatusBar({ tab, openFile, repos, clock, onOpenGit, onOpenExplorer, setPanelTab, onCycleTab }) {
+export default function StatusBar({ tab, openFile, repos, clock, cursor, indent, onOpenGit, onOpenExplorer, setPanelTab, onCycleTab }) {
   const fileType = getFileType(tab, openFile)
   return (
     <div className="ide-status-bar">
@@ -24,6 +24,12 @@ export default function StatusBar({ tab, openFile, repos, clock, onOpenGit, onOp
         <div className="ide-status-item ide-status-clickable" onClick={onOpenExplorer} title="Show Explorer">{repos?.length ?? 0} repos</div>
       </div>
       <div className="ide-status-right">
+        {openFile && cursor && (
+          <div className="ide-status-item ide-status-clickable" title="Go to Line/Column">Ln {cursor.line}, Col {cursor.col}</div>
+        )}
+        {openFile && indent && (
+          <div className="ide-status-item ide-status-clickable" title="Select Indentation">{indent}</div>
+        )}
         <div className="ide-status-item" title="Document Encoding: UTF-8">UTF-8</div>
         <div className="ide-status-item" title="End of Line: LF (Unix)">LF</div>
         <div className="ide-status-item ide-status-clickable" onClick={onCycleTab} title="Cycle editor tab">{fileType}</div>

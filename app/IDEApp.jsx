@@ -11,6 +11,7 @@ import {
 import ContextMenu from './ide/ContextMenu'
 import Breadcrumb from './ide/Breadcrumb'
 import SecondaryBar from './ide/SecondaryBar'
+import { useChat } from './ide/useChat'
 import { parseSymbols } from './ide/symbols'
 import { IconSettings } from './ide/icons'
 import ActivityBar from './ide/ActivityBar'
@@ -107,6 +108,7 @@ export default function IDEApp({ initialQuotes = [], initialMemes = [], initialC
   const [drawerOpen,     setDrawerOpen]     = useState(false)
   const [sheetOpen,      setSheetOpen]      = useState(false)
   const [zenMode,        setZenMode]        = useState(false)
+  const [cursor,         setCursor]         = useState({ line: 1, col: 1 })
 
   // Derived back-compat values for the parts not (yet) group-aware.
   const activeTabObj  = activeTabOf(editor)
@@ -126,6 +128,10 @@ export default function IDEApp({ initialQuotes = [], initialMemes = [], initialC
   const [sidebarVisible,   setSidebarVisible]   = useState(true)
   const [secondaryVisible, setSecondaryVisible] = useState(false)
   const [secondaryWidth,   setSecondaryWidth]   = useState(300)
+
+  const chat = useChat()
+
+  const [settingsOpen, setSettingsOpen] = useState(false)
 
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [paletteMode, setPaletteMode] = useState('files')
@@ -299,6 +305,7 @@ export default function IDEApp({ initialQuotes = [], initialMemes = [], initialC
   // no access to localStorage, so it must match the default first render).
   const [settings, setSettings] = useState({ 'memes.autoPlay': false, 'memes.interval': 10, 'editor.fontSize': 13, 'network.showLog': true })
   const setSetting = useCallback((k, v) => setSettings(p => ({ ...p, [k]: v })), [])
+  const toggleWordWrap = useCallback(() => setSettings(p => ({ ...p, 'editor.wordWrap': (p['editor.wordWrap'] ?? 'off') === 'off' ? 'on' : 'off' })), [])
 
   useEffect(() => {
     try {
@@ -477,16 +484,17 @@ export default function IDEApp({ initialQuotes = [], initialMemes = [], initialC
   // Per-tab breadcrumb label.
   const breadcrumbFor = (tab) => {
     if (!tab) return 'README.md'
-    if (tab.kind === 'settings') return 'settings.json'
     if (tab.kind === 'file') return tab.file
     return TABS.find(t => t.id === tab.kind)?.label || 'README.md'
   }
 
   const handleActivitySelect = (id) => {
+    // Settings is a modal dialog, not a side-bar view — open it and leave the
+    // current view/sidebar untouched (VS Code-style overlay).
+    if (id === 'settings') { setSettingsOpen(true); return }
     // Clicking the already-active view toggles the side bar (VS Code behavior).
-    if (id === activityActive && id !== 'settings') { setSidebarVisible(v => !v); return }
+    if (id === activityActive) { setSidebarVisible(v => !v); return }
     if (id === 'git' && !commitsFetched) fetchCommits()
-    if (id === 'settings') openKind('settings')
     setSidebarVisible(true)
     setActivityActive(id)
   }
@@ -502,6 +510,20 @@ export default function IDEApp({ initialQuotes = [], initialMemes = [], initialC
   const mruSwitchH       = useCallback(()  => setEditor(e => mruSwitch(e)), [])
   const gotoLine         = useCallback((line) => { if (openFile) handleOpenFile(openFile, line, { preview: false }) }, [openFile, handleOpenFile])
 
+  // Word wrap (editor.wordWrap is 'off' | 'on' | …) and detected indentation for
+  // the open file, surfaced in the status bar like VS Code.
+  const wordWrap = (settings['editor.wordWrap'] ?? 'off') !== 'off'
+  const indent = useMemo(() => {
+    const src = openFile ? fileContents?.[openFile] : null
+    if (!src) return null
+    for (const l of src.split('\n')) {
+      if (l[0] === '\t') return 'Tab Size: ' + (settings['editor.tabSize'] ?? 2)
+      const m = /^( +)\S/.exec(l)
+      if (m) return 'Spaces: ' + m[1].length
+    }
+    return 'Spaces: ' + (settings['editor.tabSize'] ?? 2)
+  }, [openFile, fileContents, settings])
+
   // ── Command Palette sources ───────────────────────────────────────────────
   const filePaths = useMemo(() => Object.keys(fileContents || {}), [fileContents])
   const paletteSymbols = useMemo(() => openFile ? parseSymbols(openFile, fileContents?.[openFile] || '') : [], [openFile, fileContents])
@@ -516,14 +538,15 @@ export default function IDEApp({ initialQuotes = [], initialMemes = [], initialC
     { id: 'view-sidebar', label: 'View: Toggle Primary Side Bar', hint: 'Ctrl+B',       run: () => setSidebarVisible(v => !v) },
     { id: 'view-maxpanel',label: 'View: Toggle Maximized Panel',                        run: () => { setPanelMaximized(m => !m); setPanelCollapsed(false) } },
     { id: 'view-zen',     label: 'View: Toggle Zen Mode',         hint: 'Ctrl+K Z',     run: () => setZenMode(z => !z) },
+    { id: 'view-wrap',    label: 'View: Toggle Word Wrap',        hint: 'Alt+Z',        run: toggleWordWrap },
     { id: 'view-secondary', label: 'View: Toggle Secondary Side Bar (Chat)', hint: 'Ctrl+Alt+B', run: () => setSecondaryVisible(v => !v) },
-    { id: 'pref-settings',label: 'Preferences: Open Settings',                          run: () => { openKind('settings'); setActivityActive('settings') } },
+    { id: 'pref-settings',label: 'Preferences: Open Settings',         hint: 'Ctrl+,',     run: () => setSettingsOpen(true) },
     { id: 'go-readme',    label: 'Go to File: README.md',                               run: () => openKind('readme') },
     { id: 'go-memes',     label: 'Go to File: memes.feed',                              run: () => openKind('memes') },
     { id: 'go-quotes',    label: 'Go to File: quotes.log',                              run: () => openKind('quotes') },
     ...Object.keys(THEMES).map(name => ({ id: `theme-${name}`, label: `Preferences: Color Theme — ${name}`, run: () => setSetting('workbench.colorTheme', name) })),
     { id: 'net-log',      label: 'Network: Toggle Request Log',                         run: () => setSetting('network.showLog', !settings['network.showLog']) },
-  ], [addTerminal, splitTerminal, splitEditor, closeActiveGroup, openPalette, openKind, setSetting, settings])
+  ], [addTerminal, splitTerminal, splitEditor, closeActiveGroup, openPalette, openKind, setSetting, settings, toggleWordWrap])
 
   // ── Global keybindings (VS Code-style, incl. Ctrl+K chords) ───────────────
   const chordRef   = useRef(0)  // timestamp of a pending Ctrl+K
@@ -531,6 +554,9 @@ export default function IDEApp({ initialQuotes = [], initialMemes = [], initialC
   useEffect(() => {
     const onKey = (e) => {
       const k = e.key.length === 1 ? e.key.toLowerCase() : e.key
+
+      // Esc closes the Settings dialog first.
+      if (k === 'Escape' && settingsOpen) { setSettingsOpen(false); return }
 
       // Double-Esc exits Zen mode.
       if (k === 'Escape') {
@@ -549,12 +575,16 @@ export default function IDEApp({ initialQuotes = [], initialMemes = [], initialC
         if (k === 'w') { e.preventDefault(); closeActiveGroup(); return }
       }
 
+      // Alt+Z toggles word wrap (no Ctrl).
+      if (k === 'z' && e.altKey && !e.ctrlKey && !e.metaKey) { e.preventDefault(); toggleWordWrap(); return }
+
       if (!(e.ctrlKey || e.metaKey)) return
 
       if (k === 'k')              { e.preventDefault(); chordRef.current = Date.now(); return }
       if (k === 'b' && e.altKey)  { e.preventDefault(); setSecondaryVisible(v => !v); return }
 
       switch (k) {
+        case ',':        e.preventDefault(); setSettingsOpen(true); break
         case 'p':        e.preventDefault(); openPalette(e.shiftKey ? 'commands' : 'files'); break
         case 'g':        e.preventDefault(); openPalette('goto'); break
         case 'o':        if (e.shiftKey) { e.preventDefault(); openPalette('symbols') } break
@@ -575,12 +605,11 @@ export default function IDEApp({ initialQuotes = [], initialMemes = [], initialC
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [openPalette, addTerminal, splitEditor, closeActiveEditor, closeActiveGroup, focusGroupIdx, cycleTabH, mruSwitchH, zenMode])
+  }, [openPalette, addTerminal, splitEditor, closeActiveEditor, closeActiveGroup, focusGroupIdx, cycleTabH, mruSwitchH, toggleWordWrap, zenMode, settingsOpen])
 
   // ── Per-tab presentation + content ────────────────────────────────────────
   const tabMeta = (tab) => {
     if (tab.kind === 'file')     return { label: tab.file.split('/').pop(), color: getFileColor(tab.file) }
-    if (tab.kind === 'settings') return { label: 'settings.json', settings: true }
     const t = TABS.find(x => x.id === tab.kind)
     return { label: t?.label || tab.kind, color: t?.color }
   }
@@ -598,7 +627,6 @@ export default function IDEApp({ initialQuotes = [], initialMemes = [], initialC
         />
       )
       case 'quotes':   return <QuotesEditor quote={quote} loading={quoteLoading} onNext={fetchQuote} />
-      case 'settings': return <SettingsUI settings={settings} setSetting={setSetting} />
       case 'file':     return (
         <CodeViewer
           filename={tab.file}
@@ -607,7 +635,9 @@ export default function IDEApp({ initialQuotes = [], initialMemes = [], initialC
           minimap={settings['editor.minimap']}
           stickyScroll={settings['editor.stickyScroll']}
           indentGuides={settings['editor.guides.indentation']}
+          wordWrap={wordWrap}
           active={active}
+          onCursor={(line, col) => setCursor({ line, col })}
         />
       )
       default: return null
@@ -621,7 +651,7 @@ export default function IDEApp({ initialQuotes = [], initialMemes = [], initialC
         openFile={openFile}
         onDrawer={() => setDrawerOpen(true)}
         onSheet={() => setSheetOpen(true)}
-        onSettings={() => openKind('settings')}
+        onSettings={() => setSettingsOpen(true)}
       />
 
       <Drawer
@@ -663,7 +693,6 @@ export default function IDEApp({ initialQuotes = [], initialMemes = [], initialC
               stack={stack}
               commits={commits}
               commitsLoading={commitsLoading}
-              settings={settings}
               fileContents={fileContents}
               editorGroups={editor.groups}
               activeGroupId={editor.activeGroupId}
@@ -716,9 +745,7 @@ export default function IDEApp({ initialQuotes = [], initialMemes = [], initialC
                         onMouseEnter={() => { if (tab.kind === 'memes' && memeUrl) { const img = new window.Image(); img.src = memeUrl } }}
                         title={tab.kind === 'file' ? tab.file : m.label}
                       >
-                        {m.settings
-                          ? <span className="ide-tab-settings-ico"><IconSettings /></span>
-                          : <span className="ide-tab-dot" style={{ background: m.color }} />}
+                        <span className="ide-tab-dot" style={{ background: m.color }} />
                         <span className="ide-tab-label">{m.label}</span>
                         <span
                           className="ide-tab-close"
@@ -852,8 +879,7 @@ export default function IDEApp({ initialQuotes = [], initialMemes = [], initialC
 
         {secondaryVisible && (
           <SecondaryBar
-            width={secondaryWidth}
-            onResizeStart={startSecondaryResize}
+            chat={chat}
             onClose={() => setSecondaryVisible(false)}
           />
         )}
@@ -866,11 +892,38 @@ export default function IDEApp({ initialQuotes = [], initialMemes = [], initialC
         openFile={openFile}
         repos={repos}
         clock={clock}
+        cursor={cursor}
+        indent={indent}
         onOpenGit={() => { setActivityActive('git'); if (!commitsFetched) fetchCommits() }}
         onOpenExplorer={() => setActivityActive('explorer')}
         setPanelTab={() => {}}
         onCycleTab={handleCycleTab}
       />
+
+      {settingsOpen && (
+        <div className="ide-settings-modal-overlay" onMouseDown={() => setSettingsOpen(false)}>
+          <div
+            className="ide-settings-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Settings"
+            onMouseDown={e => e.stopPropagation()}
+          >
+            <div className="ide-settings-modal-header">
+              <span className="ide-settings-modal-title">Settings</span>
+              <button
+                className="ide-settings-modal-close"
+                title="Close (Esc)"
+                aria-label="Close Settings"
+                onClick={() => setSettingsOpen(false)}
+              >×</button>
+            </div>
+            <div className="ide-settings-modal-body">
+              <SettingsUI settings={settings} setSetting={setSetting} />
+            </div>
+          </div>
+        </div>
+      )}
 
       <CommandPalette
         open={paletteOpen}

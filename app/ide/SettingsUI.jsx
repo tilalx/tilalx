@@ -4,26 +4,6 @@ import { useState, useRef, useEffect, useMemo } from 'react'
 import { SETTINGS_DEF, SETTINGS_DEFAULTS } from './constants'
 import { syntaxHighlight } from './syntax'
 
-export function SettingsSidebarHint({ settings }) {
-  return (
-    <div className="ide-sidebar">
-      <div className="ide-sidebar-title">Settings</div>
-      <div className="ide-section">
-        <div className="ide-section-header" style={{ cursor: 'default' }}>Current values</div>
-        {Object.entries(settings).map(([k, v]) => (
-          <div key={k} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '5px 12px', fontSize: 11, fontFamily: 'JetBrains Mono, monospace', gap: 8 }}>
-            <span style={{ color: '#6c7086', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{k}</span>
-            <span style={{ color: typeof v === 'boolean' ? (v ? '#a6e3a1' : '#f38ba8') : '#f9e2af', flexShrink: 0 }}>{String(v)}</span>
-          </div>
-        ))}
-      </div>
-      <div style={{ padding: '8px 12px', fontSize: 10, color: '#45475a', fontFamily: 'JetBrains Mono, monospace' }}>
-        Edit in the Settings tab · saved to localStorage
-      </div>
-    </div>
-  )
-}
-
 const GearIcon = () => (
   <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
     <path fillRule="evenodd" d="M9.1 4.4 8.6 2H7.4l-.5 2.4-.7.3-2-1.3-.9.8 1.3 2-.3.7-2.4.5v1.2l2.4.5.3.7-1.3 2 .8.8 2-1.3.7.3.5 2.4h1.2l.5-2.4.7-.3 2 1.3.8-.8-1.3-2 .3-.7 2.4-.5V7.4L13.6 7l-.3-.7 1.3-2-.8-.8-2 1.3-.7-.3zM8 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/>

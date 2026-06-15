@@ -3,14 +3,12 @@
 import { useState, useMemo, useRef, useEffect } from 'react'
 import { TABS, LANG_COLORS } from './constants'
 import { timeAgo, repoStatusColor, getFileColor } from './utils'
-import { IconChevron, IconFork, FileItemIcon, IconSettings } from './icons'
-import { SettingsSidebarHint } from './SettingsUI'
+import { IconChevron, IconFork, FileItemIcon } from './icons'
 import { parseSymbols } from './symbols'
 
-// Tab → { label, color, settings } for the Open Editors list.
+// Tab → { label, color } for the Open Editors list.
 function tabMetaSidebar(t) {
   if (t.kind === 'file')     return { label: t.file.split('/').pop(), color: getFileColor(t.file) }
-  if (t.kind === 'settings') return { label: 'settings.json', settings: true }
   const meta = TABS.find(x => x.id === t.kind)
   return { label: meta?.label || t.kind, color: meta?.color }
 }
@@ -115,9 +113,7 @@ function ExplorerPanel({ activeTab, openFile, onTabChange, onOpenFile, repos, fi
                   style={{ paddingLeft: 20 }}
                   onClick={() => onSelectTab?.(g.id, t.id)}
                 >
-                  {meta.settings
-                    ? <span className="ide-oe-ico"><IconSettings /></span>
-                    : <span className="ide-file-dot" style={{ background: meta.color }} />}
+                  <span className="ide-file-dot" style={{ background: meta.color }} />
                   <span className={`ide-oe-label${t.preview ? ' preview' : ''}`}>{meta.label}</span>
                   <span className="ide-oe-close" title="Close" onClick={e => { e.stopPropagation(); onCloseTab?.(g.id, t.id) }}>×</span>
                 </div>
@@ -143,6 +139,17 @@ function ExplorerPanel({ activeTab, openFile, onTabChange, onOpenFile, repos, fi
           tilalx
           <span style={{ marginLeft: 6, color: '#a6e3a1', fontSize: 9, fontWeight: 700, letterSpacing: '0.06em' }}>MAIN</span>
         </div>
+        {sections.files && TABS.filter(t => t.id !== 'readme').map(tab => (
+          <div
+            key={tab.id}
+            className={`ide-file-item${activeTab === tab.id && !openFile ? ' active' : ''}`}
+            style={{ paddingLeft: 20 }}
+            onClick={() => onTabChange(tab.id)}
+          >
+            <span className="ide-file-dot" style={{ background: tab.color }} />
+            <span>{tab.label}</span>
+          </div>
+        ))}
         {sections.files && fileTree.map(item => (
           <FileTreeItem
             key={item.name}
@@ -458,11 +465,10 @@ function ExtensionsPanel({ repos, stack }) {
   )
 }
 
-export default function Sidebar({ activityView, activeTab, openFile, onTabChange, onOpenFile, repos, fileTree, stack, commits, commitsLoading, settings, fileContents, editorGroups, activeGroupId, onSelectTab, onCloseTab }) {
+export default function Sidebar({ activityView, activeTab, openFile, onTabChange, onOpenFile, repos, fileTree, stack, commits, commitsLoading, fileContents, editorGroups, activeGroupId, onSelectTab, onCloseTab }) {
   if (activityView === 'search')     return <SearchPanel repos={repos} stack={stack} onTabChange={onTabChange} fileContents={fileContents} onOpenFile={onOpenFile} />
   if (activityView === 'git')        return <SourceControlPanel commits={commits} loading={commitsLoading} />
   if (activityView === 'extensions') return <ExtensionsPanel repos={repos} stack={stack} />
-  if (activityView === 'settings')   return <SettingsSidebarHint settings={settings} />
   return (
     <ExplorerPanel
       activeTab={activeTab} openFile={openFile} onTabChange={onTabChange} onOpenFile={onOpenFile}

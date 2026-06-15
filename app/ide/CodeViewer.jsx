@@ -22,15 +22,54 @@ function indentOf(s) {
   return n
 }
 
-export default function CodeViewer({ filename, content, scrollToLine, minimap, stickyScroll, indentGuides, active }) {
+const unescapeHtml = (s) => s
+  .replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+  .replace(/&quot;/g, '"').replace(/&#0?39;/g, "'").replace(/&amp;/g, '&')
+const escapeHtml = (s) => s
+  .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+
+// Wrap find matches in <mark> inside an already syntax-highlighted line. We only
+// touch text between tags (never tag internals), unescape each text run so the
+// query matches the visible characters, then re-escape. `curIndex` is the raw
+// char offset of the currently-focused match on this line (-1 if none).
+function markLine(html, re, curIndex) {
+  const parts = html.split(/(<[^>]*>)/)
+  let pos = 0, out = ''
+  for (const p of parts) {
+    if (!p) continue
+    if (p[0] === '<') { out += p; continue }
+    const text = unescapeHtml(p)
+    let last = 0
+    re.lastIndex = 0
+    let m
+    while ((m = re.exec(text)) !== null) {
+      out += escapeHtml(text.slice(last, m.index))
+      const cls = pos + m.index === curIndex ? 'ide-find-mark current' : 'ide-find-mark'
+      out += `<mark class="${cls}">${escapeHtml(m[0])}</mark>`
+      last = m.index + m[0].length
+      if (!m[0].length) re.lastIndex++
+    }
+    out += escapeHtml(text.slice(last))
+    pos += text.length
+  }
+  return out
+}
+
+export default function CodeViewer({ filename, content, scrollToLine, minimap, stickyScroll, indentGuides, wordWrap, active, onCursor }) {
   const scrollRef    = useRef(null)
   const highlightRef = useRef(null)
 
   const [scrollTop, setScrollTop] = useState(0)
   const [viewH,     setViewH]     = useState(0)
   const [findOpen,  setFindOpen]  = useState(false)
+  const [replaceShown, setReplaceShown] = useState(false)
   const [query,     setQuery]     = useState('')
+  const [replace,   setReplace]   = useState('')
+  const [caseSensitive, setCaseSensitive] = useState(false)
+  const [wholeWord,     setWholeWord]     = useState(false)
+  const [useRegex,      setUseRegex]      = useState(false)
   const [matchIdx,  setMatchIdx]  = useState(0)
+  const [cursor,    setCursor]    = useState({ line: 1, col: 1 })
 
   const ext = useMemo(() => {
     const name = (filename || '').split('/').pop()
@@ -55,16 +94,30 @@ export default function CodeViewer({ filename, content, scrollToLine, minimap, s
     return syntaxHighlight(content || '', ext).split('\n')
   }, [content, ext, isImage])
 
-  // ── Find (Ctrl+F) ──────────────────────────────────────────────────────────
-  const matches = useMemo(() => {
-    const q = query.trim().toLowerCase()
-    if (!q) return []
+  // ── Find (Ctrl+F / Ctrl+H) ───────────────────────────────────────────────────
+  // Builds one global regex from the query + the case/word/regex toggles, then
+  // collects every occurrence (not just every line) so "x of N" matches VS Code.
+  const find = useMemo(() => {
+    if (!query) return { matches: [], invalid: false, source: '', flags: '' }
+    let source = useRegex ? query : query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    if (wholeWord) source = `\\b(?:${source})\\b`
+    const flags = 'g' + (caseSensitive ? '' : 'i')
+    let re
+    try { re = new RegExp(source, flags) } catch { return { matches: [], invalid: true, source: '', flags: '' } }
     const out = []
-    rawLines.forEach((l, i) => { if (l.toLowerCase().includes(q)) out.push({ line: i + 1 }) })
-    return out
-  }, [query, rawLines])
+    rawLines.forEach((l, i) => {
+      re.lastIndex = 0
+      let m
+      while ((m = re.exec(l)) !== null) {
+        out.push({ line: i + 1, index: m.index })
+        if (!m[0].length) re.lastIndex++
+      }
+    })
+    return { matches: out, invalid: false, source, flags }
+  }, [query, useRegex, wholeWord, caseSensitive, rawLines])
 
-  useEffect(() => { setMatchIdx(0) }, [query])
+  const matches = find.matches
+  useEffect(() => { setMatchIdx(0) }, [query, caseSensitive, wholeWord, useRegex])
 
   const stepMatch = useCallback((dir) => {
     if (!matches.length) return
@@ -76,20 +129,47 @@ export default function CodeViewer({ filename, content, scrollToLine, minimap, s
     })
   }, [matches])
 
+  // Replace is non-destructive on this read-only viewer: it builds the replaced
+  // document and copies it to the clipboard (VS Code-faithful chrome, honest behavior).
+  const replaceAll = useCallback(() => {
+    if (!find.source || !find.matches.length) return 0
+    let out
+    try { out = (content || '').replace(new RegExp(find.source, find.flags), replace) } catch { return 0 }
+    try { navigator.clipboard?.writeText(out) } catch {}
+    return find.matches.length
+  }, [find, replace, content])
+
   useEffect(() => {
     if (!active) return
     const onKey = (e) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {
-        e.preventDefault(); e.stopPropagation()
-        setFindOpen(true)
-      }
+      if (!(e.ctrlKey || e.metaKey)) return
+      const k = e.key.toLowerCase()
+      if (k === 'f') { e.preventDefault(); e.stopPropagation(); setFindOpen(true); setReplaceShown(false) }
+      else if (k === 'h') { e.preventDefault(); e.stopPropagation(); setFindOpen(true); setReplaceShown(true) }
     }
     window.addEventListener('keydown', onKey, true)
     return () => window.removeEventListener('keydown', onKey, true)
   }, [active])
 
   const matchLines = useMemo(() => new Set(matches.map(m => m.line)), [matches])
-  const currentMatchLine = matches[matchIdx]?.line
+  const currentMatch = matches[matchIdx]
+  const currentMatchLine = currentMatch?.line
+
+  // ── Cursor (active line + Ln/Col for the status bar) ─────────────────────────
+  const reportCursor = useCallback((line, col) => { setCursor({ line, col }); onCursor?.(line, col) }, [onCursor])
+  useEffect(() => { reportCursor(1, 1) }, [filename]) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (scrollToLine) reportCursor(scrollToLine, 1) }, [scrollToLine]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const onRowClick = useCallback((e, ln) => {
+    const codeEl = e.currentTarget.querySelector('.ide-line-code')
+    if (!codeEl) { reportCursor(ln, 1); return }
+    const rect = codeEl.getBoundingClientRect()
+    const fs = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ide-font-size')) || 13
+    const charW = fs * 0.6 // JetBrains Mono advance ≈ 0.6em
+    const lineLen = (rawLines[ln - 1] || '').length
+    const col = Math.min(lineLen + 1, Math.max(1, Math.round((e.clientX - rect.left) / charW) + 1))
+    reportCursor(ln, col)
+  }, [rawLines, reportCursor])
 
   // ── Scroll tracking (for sticky + minimap) ──────────────────────────────────
   useEffect(() => {
@@ -159,9 +239,16 @@ export default function CodeViewer({ filename, content, scrollToLine, minimap, s
       {findOpen && (
         <FindWidget
           query={query} setQuery={setQuery}
+          replace={replace} setReplace={setReplace}
+          replaceShown={replaceShown} onToggleReplace={() => setReplaceShown(s => !s)}
+          caseSensitive={caseSensitive} onToggleCase={() => setCaseSensitive(v => !v)}
+          wholeWord={wholeWord} onToggleWord={() => setWholeWord(v => !v)}
+          useRegex={useRegex} onToggleRegex={() => setUseRegex(v => !v)}
+          invalid={find.invalid}
           matches={matches} index={matchIdx}
           onStep={stepMatch}
-          onClose={() => { setFindOpen(false); setQuery('') }}
+          onReplaceAll={replaceAll}
+          onClose={() => { setFindOpen(false); setQuery(''); setReplace('') }}
         />
       )}
 
@@ -172,21 +259,25 @@ export default function CodeViewer({ filename, content, scrollToLine, minimap, s
           </div>
         )}
         {!isImage && (
-          <pre className={`ide-code-body${indentGuides ? ' with-guides' : ''}`}>
+          <pre className={`ide-code-body${indentGuides ? ' with-guides' : ''}${wordWrap ? ' wrap' : ''}`}>
             {highlightedLines.map((hlLine, i) => {
               const ln = i + 1
               const isHighlight = scrollToLine === ln
               const isMatch = matchLines.has(ln)
-              const isCurrent = currentMatchLine === ln
+              const isCursor = cursor.line === ln
+              const html = isMatch && find.source
+                ? markLine(hlLine, new RegExp(find.source, find.flags), currentMatchLine === ln ? currentMatch.index : -1)
+                : (hlLine || ' ')
               return (
                 <div
                   key={i}
                   data-line={ln}
                   ref={isHighlight ? highlightRef : null}
-                  className={`ide-code-row${isHighlight ? ' highlight' : ''}${isMatch ? ' match' : ''}${isCurrent ? ' match-current' : ''}`}
+                  className={`ide-code-row${isHighlight ? ' highlight' : ''}${isMatch ? ' match' : ''}${isCursor ? ' cursor-line' : ''}`}
+                  onMouseDown={e => onRowClick(e, ln)}
                 >
                   <span className="ide-line-num">{ln}</span>
-                  <span className="ide-line-code" dangerouslySetInnerHTML={{ __html: hlLine || ' ' }} />
+                  <span className="ide-line-code" dangerouslySetInnerHTML={{ __html: html }} />
                 </div>
               )
             })}

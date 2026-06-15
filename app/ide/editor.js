@@ -5,11 +5,9 @@
 // single `useState` in IDEApp and to serialize for persistence.
 //
 // Tab:   { id, kind, file?, line?, preview, pinned }
-//        kind ∈ 'readme' | 'memes' | 'quotes' | 'settings' | 'file'
+//        kind ∈ 'readme' | 'memes' | 'quotes' | 'file'
 // Group: { id, tabs: Tab[], activeTabId, mru: id[] }   // mru = most-recently-used
 // State: { groups: Group[], activeGroupId, seq }       // seq = monotonic id source
-
-export const FIXED_KINDS = ['readme', 'memes', 'quotes', 'settings']
 
 export function tabKey(tab) {
   return tab.kind === 'file' ? `file:${tab.file}` : tab.kind
