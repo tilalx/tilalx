@@ -280,12 +280,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@mlc-ai/web-llm@npm:^0.2.84":
-  version: 0.2.84
-  resolution: "@mlc-ai/web-llm@npm:0.2.84"
+"@mlc-ai/web-llm@npm:^0.2.85":
+  version: 0.2.85
+  resolution: "@mlc-ai/web-llm@npm:0.2.85"
   dependencies:
     loglevel: "npm:^1.9.1"
-  checksum: 10c0/d03898f78a16ee572306633cff1824ea68ac41d8cd7321cc8f20cf2567f703d3f55fa25425f900fee7c9bafe32bd95fa2cce3cd9df8e80cd3418a43b50f863af
+  checksum: 10c0/8b6d7c71cc6e4b884180f56ee11ab1cb03339418eedb6736c94043ddef7b9150107b1b3957ef8f732f99348781ff58caafd7095be33130a21bda97df967255e7
   languageName: node
   linkType: hard
 
@@ -1721,7 +1721,7 @@ __metadata:
   dependencies:
     "@fontsource/inter": "npm:^5.3.0"
     "@fontsource/jetbrains-mono": "npm:^5.3.0"
-    "@mlc-ai/web-llm": "npm:^0.2.84"
+    "@mlc-ai/web-llm": "npm:^0.2.85"
     "@xterm/addon-fit": "npm:^0.11.0"
     "@xterm/addon-web-links": "npm:^0.12.0"
     "@xterm/xterm": "npm:^6.0.0"
