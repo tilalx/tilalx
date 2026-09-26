@@ -13,7 +13,6 @@ function LineNumbers({ count }) {
 }
 
 const IMAGE_EXTS = new Set(['png', 'jpg', 'jpeg', 'webp', 'ico', 'gif'])
-const LINE_H = 22
 
 // Leading-indent width (tabs count as 2 columns) — used for sticky scroll.
 function indentOf(s) {
@@ -60,6 +59,8 @@ export default function CodeViewer({ filename, content, scrollToLine, minimap, s
   const highlightRef = useRef(null)
 
   const [scrollTop, setScrollTop] = useState(0)
+  const [scrollH,   setScrollH]   = useState(0)
+  const [firstLine, setFirstLine] = useState(0) // 0-based index of the top visible row
   const [viewH,     setViewH]     = useState(0)
   const [findOpen,  setFindOpen]  = useState(false)
   const [replaceShown, setReplaceShown] = useState(false)
@@ -175,13 +176,28 @@ export default function CodeViewer({ filename, content, scrollToLine, minimap, s
   useEffect(() => {
     const el = scrollRef.current
     if (!el) return
-    const onScroll = () => setScrollTop(el.scrollTop)
-    const ro = new ResizeObserver(() => setViewH(el.clientHeight))
+    // Rows aren't a fixed height (word wrap, font size), so measure the DOM:
+    // binary-search the first row whose top is at/above the viewport top.
+    const onScroll = () => {
+      setScrollTop(el.scrollTop)
+      setScrollH(el.scrollHeight)
+      const rows = el.querySelector('.ide-code-body')?.children
+      if (!rows?.length) return
+      const top = el.getBoundingClientRect().top
+      let lo = 0, hi = rows.length - 1
+      while (lo < hi) {
+        const mid = (lo + hi + 1) >> 1
+        if (rows[mid].getBoundingClientRect().top - top <= 0) lo = mid; else hi = mid - 1
+      }
+      setFirstLine(lo)
+    }
+    const ro = new ResizeObserver(() => { setViewH(el.clientHeight); onScroll() })
     el.addEventListener('scroll', onScroll, { passive: true })
     ro.observe(el)
     setViewH(el.clientHeight)
+    onScroll()
     return () => { el.removeEventListener('scroll', onScroll); ro.disconnect() }
-  }, [isImage])
+  }, [isImage, content, wordWrap])
 
   useEffect(() => {
     if (scrollToLine && highlightRef.current) {
@@ -192,7 +208,7 @@ export default function CodeViewer({ filename, content, scrollToLine, minimap, s
   // ── Sticky scroll: enclosing scope lines pinned at the top ───────────────────
   const sticky = useMemo(() => {
     if (!stickyScroll || isImage) return []
-    const first = Math.floor(scrollTop / LINE_H)
+    const first = firstLine
     if (first <= 0) return []
     if (isMd) {
       for (let i = first - 1; i >= 0; i--) {
@@ -209,12 +225,12 @@ export default function CodeViewer({ filename, content, scrollToLine, minimap, s
       if (ind < need) { res.unshift({ text: l, line: i + 1 }); need = ind; if (ind === 0) break }
     }
     return res
-  }, [stickyScroll, isImage, isMd, scrollTop, rawLines])
+  }, [stickyScroll, isImage, isMd, firstLine, rawLines])
 
   // ── Minimap geometry ─────────────────────────────────────────────────────────
   const showMinimap = minimap && !isImage && rawLines.length > 1
   const miniLineH = showMinimap ? Math.min(3, viewH / Math.max(rawLines.length, 1)) : 3
-  const contentH  = rawLines.length * LINE_H
+  const contentH  = scrollH
   const sliderTop = contentH > 0 ? (scrollTop / contentH) * (rawLines.length * miniLineH) : 0
   const sliderH   = contentH > 0 ? Math.max(20, (viewH / contentH) * (rawLines.length * miniLineH)) : 0
 
@@ -225,8 +241,9 @@ export default function CodeViewer({ filename, content, scrollToLine, minimap, s
     if (sc) sc.scrollTop = ratio * (contentH - viewH)
   }
   const onMiniDown = (e) => {
-    jumpFromMinimap(e.clientY, e.currentTarget)
-    const move = (ev) => jumpFromMinimap(ev.clientY, e.currentTarget)
+    const el = e.currentTarget // React nulls currentTarget once the handler returns
+    jumpFromMinimap(e.clientY, el)
+    const move = (ev) => jumpFromMinimap(ev.clientY, el)
     const up = () => { window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up) }
     window.addEventListener('pointermove', move)
     window.addEventListener('pointerup', up)

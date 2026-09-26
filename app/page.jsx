@@ -7,7 +7,7 @@ import ReadmeEditor from './ide/ReadmeEditor'
 import { LANG_COLORS } from './ide/constants'
 import { stripQuotes, parseTags, pickMemeUrl } from './ide/utils'
 
-const ROOT_FILE_NAMES = ['README.md', 'package.json', 'next.config.js', 'Dockerfile', '.gitignore']
+const ROOT_FILE_NAMES = ['ReadMe.md', 'package.json', 'next.config.js', 'Dockerfile', '.gitignore']
 const INCLUDE_SUBDIRS = ['app', 'public']
 const IGNORE_NAMES    = new Set(['node_modules', '.next', 'dist', '.git', 'yarn.lock', 'package-lock.json'])
 

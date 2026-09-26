@@ -15,10 +15,13 @@ export default function ChatMessage({ text, role }) {
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
-          code({ node, inline, className, children, ...props }) {
-            const match = /language-(\w+)/.exec(className || '')
-            const lang = match ? match[1] : ''
-            if (!inline && lang) {
+          // react-markdown >=9 has no `inline` prop: fenced blocks arrive wrapped
+          // in <pre>, so blocks are rendered here and `code` alone is inline.
+          pre({ children }) {
+            const code = children?.props || {}
+            const lang = /language-(\w+)/.exec(code.className || '')?.[1]
+            const text = String(code.children ?? '').replace(/\n$/, '')
+            if (lang) {
               return (
                 <SyntaxHighlighter
                   style={vscDarkPlus}
@@ -32,21 +35,15 @@ export default function ChatMessage({ text, role }) {
                     border: '1px solid #313244',
                     background: '#11111b',
                   }}
-                  {...props}
                 >
-                  {String(children).replace(/\n$/, '')}
+                  {text}
                 </SyntaxHighlighter>
               )
             }
-            if (!inline) {
-              // Fenced block without language
-              return (
-                <pre className="ide-chat-code-block" {...props}>
-                  <code>{children}</code>
-                </pre>
-              )
-            }
-            return <code className="ide-chat-inline-code" {...props}>{children}</code>
+            return <pre className="ide-chat-code-block"><code>{text}</code></pre>
+          },
+          code({ children }) {
+            return <code className="ide-chat-inline-code">{children}</code>
           },
           p({ children }) {
             return <p className="ide-chat-p">{children}</p>

@@ -41,7 +41,7 @@ const commonPrefix = (arr) => {
 
 const CLEAR_SCREEN = '\x1b[2J\x1b[3J\x1b[H' // clear viewport + scrollback + home
 
-function XTermPane({ repos, stack, commits, fileTree, isActive, themeVars }) {
+function XTermPane({ repos, stack, commits, fileTree, isActive, themeVars, fontSize }) {
   const containerRef = useRef(null)
   const fitRef       = useRef(null)
   const termRef      = useRef(null)
@@ -50,6 +50,7 @@ function XTermPane({ repos, stack, commits, fileTree, isActive, themeVars }) {
   const commitsRef   = useRef(commits)
   const fileTreeRef  = useRef(fileTree)
   const themeRef     = useRef(themeVars)
+  const fontSizeRef  = useRef(fontSize)
 
   useEffect(() => { reposRef.current    = repos    }, [repos])
   useEffect(() => { stackRef.current    = stack    }, [stack])
@@ -63,6 +64,14 @@ function XTermPane({ repos, stack, commits, fileTree, isActive, themeVars }) {
   }, [themeVars])
 
   useEffect(() => {
+    fontSizeRef.current = fontSize
+    if (termRef.current) {
+      termRef.current.options.fontSize = fontSize
+      try { fitRef.current?.fit() } catch {}
+    }
+  }, [fontSize])
+
+  useEffect(() => {
     if (isActive) {
       requestAnimationFrame(() => {
         try { fitRef.current?.fit() } catch {}
@@ -73,7 +82,7 @@ function XTermPane({ repos, stack, commits, fileTree, isActive, themeVars }) {
 
   useEffect(() => {
     if (!containerRef.current) return
-    let term, ro
+    let term, ro, disposed = false
 
     ;(async () => {
       const [{ Terminal }, { FitAddon }, { WebLinksAddon }] = await Promise.all([
@@ -81,11 +90,13 @@ function XTermPane({ repos, stack, commits, fileTree, isActive, themeVars }) {
         import('@xterm/addon-fit'),
         import('@xterm/addon-web-links'),
       ])
+      // Unmounted while the imports were loading (e.g. StrictMode double-mount).
+      if (disposed || !containerRef.current) return
 
       term = new Terminal({
         theme: buildTheme(themeRef.current),
         fontFamily: '"JetBrains Mono", Consolas, "Courier New", monospace',
-        fontSize: 13,
+        fontSize: fontSizeRef.current || 13,
         lineHeight: 1.45,
         cursorBlink: true,
         scrollback: 1000,
@@ -195,11 +206,15 @@ function XTermPane({ repos, stack, commits, fileTree, isActive, themeVars }) {
             redrawLine()
             return
           case '\x1b[B': // Down — newer history
+            if (histIdx < 0) return // not browsing history: keep the typed line
             histIdx--
             line = histIdx < 0 ? (histIdx = -1, '') : history[histIdx]
             redrawLine()
             return
           default: {
+            // Unhandled escape sequences (←/→, Home, End, Delete, F-keys) — ignore
+            // instead of inserting their printable tail like "[D".
+            if (data[0] === '\x1b') return
             // Printable input or pasted text. Strip control chars (incl. embedded
             // newlines from multi-line pastes) so a single line stays single-line.
             const clean = data.replace(/[\x00-\x1f\x7f]/g, '')
@@ -209,7 +224,7 @@ function XTermPane({ repos, stack, commits, fileTree, isActive, themeVars }) {
       })
     })()
 
-    return () => { ro?.disconnect(); term?.dispose(); fitRef.current = null; termRef.current = null }
+    return () => { disposed = true; ro?.disconnect(); term?.dispose(); fitRef.current = null; termRef.current = null }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   return <div ref={containerRef} className="ide-xterm-container" />
@@ -276,7 +291,7 @@ function InstanceRow({ group, active, onSelect, onClose, onRename }) {
 // Container: manages the stack of terminal groups + the instances sidebar.
 // Group/pane state lives in IDEApp so the bottom-panel action buttons can drive it.
 // A group is a split: { id, name, panes: number[] } — panes render side-by-side.
-export default function TerminalView({ groups, activeId, isActive, onAdd, onSelect, onClose, onRename, onClosePane, repos, stack, commits, fileTree, themeVars }) {
+export default function TerminalView({ groups, activeId, isActive, onAdd, onSelect, onClose, onRename, onClosePane, repos, stack, commits, fileTree, themeVars, fontSize }) {
   return (
     <div className="ide-terminal-wrapper">
       <div className="ide-terminal-stack">
@@ -305,6 +320,7 @@ export default function TerminalView({ groups, activeId, isActive, onAdd, onSele
                   repos={repos} stack={stack} commits={commits} fileTree={fileTree}
                   isActive={isActive && activeId === group.id}
                   themeVars={themeVars}
+                  fontSize={fontSize}
                 />
               </div>
             ))}

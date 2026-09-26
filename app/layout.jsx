@@ -1,7 +1,6 @@
 import { cookies } from 'next/headers'
 import './globals.css'
 import '@xterm/xterm/css/xterm.css'
-import Track from './Track'
 import { THEMES } from './ide/constants'
 
 export const viewport = {
@@ -34,7 +33,6 @@ export default async function RootLayout({ children }) {
   return (
     <html lang="en" style={htmlStyle}>
       <body>
-        <Track />
         {children}
       </body>
     </html>

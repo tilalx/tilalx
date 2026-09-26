@@ -2,7 +2,7 @@
 
 import { getFileType } from './utils'
 
-export default function StatusBar({ tab, openFile, repos, clock, cursor, indent, onOpenGit, onOpenExplorer, setPanelTab, onCycleTab }) {
+export default function StatusBar({ tab, openFile, repos, clock, cursor, indent, onOpenGit, onOpenExplorer, onCycleTab }) {
   const fileType = getFileType(tab, openFile)
   return (
     <div className="ide-status-bar">
@@ -20,7 +20,7 @@ export default function StatusBar({ tab, openFile, repos, clock, cursor, indent,
           main
         </a>
         <div className="ide-status-item ide-status-clickable" onClick={onOpenGit} title="Open Source Control">↑0 ↓0</div>
-        <div className="ide-status-item ide-status-clickable" style={{ color: '#a6e3a1' }} onClick={() => setPanelTab('preview')} title="Show Live Preview">● api ok</div>
+        <div className="ide-status-item" style={{ color: '#a6e3a1' }}>● api ok</div>
         <div className="ide-status-item ide-status-clickable" onClick={onOpenExplorer} title="Show Explorer">{repos?.length ?? 0} repos</div>
       </div>
       <div className="ide-status-right">

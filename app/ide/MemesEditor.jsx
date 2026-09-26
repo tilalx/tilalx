@@ -39,7 +39,7 @@ export default function MemesEditor({ memeUrl, memeLoading, onNext, autoPlay, in
           <span style={{ color: '#6c7086' }}>every</span>
           <button className="ide-meme-btn" onClick={() => onIntervalChange(Math.max(1, interval - 1))}>▼</button>
           <span style={{ color: '#f9e2af', minWidth: 26, textAlign: 'center' }}>{interval}s</span>
-          <button className="ide-meme-btn" onClick={() => onIntervalChange(interval + 1)}>▲</button>
+          <button className="ide-meme-btn" onClick={() => onIntervalChange(Math.min(60, interval + 1))}>▲</button>
         </>}
         <div style={{ width: 1, height: 16, background: '#313244', flexShrink: 0 }} />
         <button className="ide-meme-btn" onClick={onNext} disabled={memeLoading}>

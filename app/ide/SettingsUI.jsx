@@ -63,14 +63,35 @@ function SettingControl({ item, value, onChange }) {
       </>
     )
   }
+  return <NumberControl item={item} value={value} onChange={onChange} />
+}
+
+// Keeps the raw text locally so the field can be cleared/retyped; only in-range
+// numbers are applied, and blur/Enter snaps anything else back into range.
+function NumberControl({ item, value, onChange }) {
+  const [draft, setDraft] = useState(String(value))
+  useEffect(() => { setDraft(String(value)) }, [value])
+  const inRange = (n) => Number.isFinite(n) && n >= item.min && n <= item.max
+  const commit = () => {
+    const n = Number(draft)
+    const v = draft.trim() === '' || !Number.isFinite(n) ? value : Math.min(item.max, Math.max(item.min, Math.round(n)))
+    setDraft(String(v))
+    if (v !== value) onChange(v)
+  }
   return (
     <input
       type="number"
       className="ide-settings-input"
-      value={value}
+      value={draft}
       min={item.min}
       max={item.max}
-      onChange={e => onChange(Number(e.target.value))}
+      onChange={e => {
+        setDraft(e.target.value)
+        const n = Number(e.target.value)
+        if (e.target.value.trim() !== '' && inRange(n)) onChange(n)
+      }}
+      onBlur={commit}
+      onKeyDown={e => { if (e.key === 'Enter') commit() }}
     />
   )
 }

@@ -74,15 +74,15 @@ function highlightCssLine(line, inBlock) {
     if (e === -1) return [shEsc(line.slice(0, s)) + shSpan('#6a9955', line.slice(s)), true]
     return [shEsc(line.slice(0, s)) + shSpan('#6a9955', line.slice(s, e + 2)) + highlightCssLine(line.slice(e + 2), false)[0], false]
   }
-  let out = line
-  out = out.replace(/^(\s*)(@[\w-]+)/, (_, sp, at) => shEsc(sp) + shSpan('#c586c0', at))
-  if (/{/.test(out) && !/:/.test(out.split('{')[0])) {
-    out = out.replace(/^(.*?)(\s*\{)/, (_, sel, b) => shSpan('#d7ba7d', sel) + shEsc(b))
-  } else {
-    out = out.replace(/^(\s*)([\w-]+)(\s*:)/, (_, sp, prop, col) => shEsc(sp) + shSpan('#9cdcfe', prop) + shEsc(col))
-    out = out.replace(/:\s*(.+?)(;?\s*)$/, (_, val, end) => ': ' + shSpan('#ce9178', val.trim()) + shEsc(end))
-  }
-  return [shEsc(line) !== out ? out : shEsc(line), false]
+  // Match on the raw line and escape each piece; running later regexes over
+  // already-emitted <span style="color:…"> markup would match its colons.
+  const at = /^(\s*)(@[\w-]+)(.*)$/.exec(line)
+  if (at) return [shEsc(at[1]) + shSpan('#c586c0', at[2]) + shEsc(at[3]), false]
+  const sel = /^([^{;]*?)(\s*\{.*)$/.exec(line)
+  if (sel) return [shSpan('#d7ba7d', sel[1]) + shEsc(sel[2]), false]
+  const decl = /^(\s*)([\w-]+)(\s*:\s*)(.*?)(;?\s*)$/.exec(line)
+  if (decl) return [shEsc(decl[1]) + shSpan('#9cdcfe', decl[2]) + shEsc(decl[3]) + shSpan('#ce9178', decl[4]) + shEsc(decl[5]), false]
+  return [shEsc(line), false]
 }
 
 function highlightJsonLine(line) {
@@ -90,11 +90,11 @@ function highlightJsonLine(line) {
     .replace(/^(\s*")((?:[^"\\]|\\.)*)(")(:\s*)/, (_, a, k, c, col) =>
       a + `<span style="color:#9cdcfe">${k}</span>` + c + col)
     .replace(/(?<=:\s*)"((?:[^"\\]|\\.)*)"/, (_, v) =>
-      `: <span style="color:#ce9178">"${v}"</span>`)
+      `<span style="color:#ce9178">"${v}"</span>`)
     .replace(/(?<=:\s*)(-?\d+\.?\d*(?:[eE][+-]?\d+)?)/, (_, n) =>
-      `: <span style="color:#b5cea8">${n}</span>`)
+      `<span style="color:#b5cea8">${n}</span>`)
     .replace(/(?<=:\s*)(true|false|null)/, (_, kw) =>
-      `: <span style="color:#569cd6">${kw}</span>`)
+      `<span style="color:#569cd6">${kw}</span>`)
 }
 
 function highlightMdLine(line) {

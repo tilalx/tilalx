@@ -1437,13 +1437,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-ga4@npm:^3.0.1":
-  version: 3.0.1
-  resolution: "react-ga4@npm:3.0.1"
-  checksum: 10c0/b50437101057faf3ba1dff3e5646f0f5111731f7b752a6031b7ac4088306e6afa2629397fa208370e6c0d108cb42a7925c17a924354f9556e5d278b96f3617dc
-  languageName: node
-  linkType: hard
-
 "react-markdown@npm:^10.1.0":
   version: 10.1.0
   resolution: "react-markdown@npm:10.1.0"
@@ -1728,7 +1721,6 @@ __metadata:
     next: "npm:^16.3.5"
     react: "npm:^19.3.0"
     react-dom: "npm:^19.3.0"
-    react-ga4: "npm:^3.0.1"
     react-markdown: "npm:^10.1.0"
     react-syntax-highlighter: "npm:^16.1.1"
     remark-gfm: "npm:^4.0.1"

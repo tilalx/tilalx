@@ -11,6 +11,9 @@ function contribColor(count) {
   return CONTRIB_COLORS[4]
 }
 
+// 'YYYY-MM-DD' alone parses as UTC midnight, which shifts the weekday west of UTC.
+const localDate = (s) => new Date(`${s}T00:00:00`)
+
 const DAY_LABEL_W = 32
 const GAP = 3
 
@@ -28,21 +31,23 @@ export default function ContributionGraph({ username, initialData }) {
       setLoading(false)
       return
     }
+    let cancelled = false // ignore a slower response for a year no longer selected
     setLoading(true)
     setData(null)
     fetch(`/api/contributions/${year}`)
-      .then(r => r.json())
-      .then(d => { setData(d); setLoading(false) })
-      .catch(() => setLoading(false))
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (!cancelled) { setData(d); setLoading(false) } })
+      .catch(() => { if (!cancelled) setLoading(false) })
+    return () => { cancelled = true }
   }, [username, year])
 
   const { weeks, monthLabels, total } = useMemo(() => {
     if (!data?.contributions) return { weeks: [], monthLabels: [], total: 0 }
     const today = new Date(); today.setHours(23, 59, 59, 999)
-    const days  = data.contributions.filter(d => new Date(d.date) <= today)
+    const days  = data.contributions.filter(d => localDate(d.date) <= today)
     if (!days.length) return { weeks: [], monthLabels: [], total: 0 }
     const total    = days.reduce((s, d) => s + d.count, 0)
-    const firstDow = new Date(days[0].date).getDay()
+    const firstDow = localDate(days[0].date).getDay()
     const padded   = [...Array(firstDow).fill(null), ...days]
     const weeks    = []
     for (let i = 0; i < padded.length; i += 7) weeks.push(padded.slice(i, i + 7))
@@ -51,7 +56,7 @@ export default function ContributionGraph({ username, initialData }) {
     weeks.forEach((week, wi) => {
       const first = week.find(Boolean)
       if (!first) return
-      const m = new Date(first.date).getMonth()
+      const m = localDate(first.date).getMonth()
       if (m !== lastMonth) { monthLabels.push({ wi, label: CONTRIB_MONTHS[m] }); lastMonth = m }
     })
     return { weeks, monthLabels, total }
@@ -76,7 +81,7 @@ export default function ContributionGraph({ username, initialData }) {
     <div className="ide-contrib-wrap" ref={wrapRef}>
       <div className="ide-contrib-header">
         <span className="ide-contrib-count">
-          {loading ? '…' : `${total.toLocaleString()} contributions in ${year}`}
+          {loading ? '…' : data ? `${total.toLocaleString()} contributions in ${year}` : `Couldn't load contributions for ${year}`}
         </span>
         <div className="ide-contrib-years">
           {[currentYear, currentYear-1, currentYear-2, currentYear-3].map(y => (

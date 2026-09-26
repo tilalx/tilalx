@@ -82,8 +82,9 @@ export function openInGroup(state, spec, opts = {}) {
         const pvIdx = g.tabs.findIndex(t => t.preview && !t.pinned)
         if (pvIdx !== -1) {
           const tabs = g.tabs.slice()
+          const replacedId = tabs[pvIdx].id
           tabs[pvIdx] = tab
-          return { ...g, tabs, activeTabId: id, mru: pushMru(g.mru, id) }
+          return { ...g, tabs, activeTabId: id, mru: pushMru(g.mru.filter(x => x !== replacedId), id) }
         }
       }
       return { ...g, tabs: [...g.tabs, tab], activeTabId: id, mru: pushMru(g.mru, id) }

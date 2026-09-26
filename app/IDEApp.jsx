@@ -16,7 +16,6 @@ import { parseSymbols } from './ide/symbols'
 import { IconSettings } from './ide/icons'
 import ActivityBar from './ide/ActivityBar'
 import Sidebar from './ide/Sidebar'
-import ReadmeEditor from './ide/ReadmeEditor'
 import MemesEditor from './ide/MemesEditor'
 import QuotesEditor from './ide/QuotesEditor'
 import SettingsUI from './ide/SettingsUI'
@@ -334,12 +333,14 @@ export default function IDEApp({ initialQuotes = [], initialMemes = [], initialC
     const tick = () => setClock(new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }))
     tick()
     const ms = 60000 - (Date.now() % 60000)
-    const t = setTimeout(() => { tick(); setInterval(tick, 60000) }, ms)
-    return () => clearTimeout(t)
+    let iv
+    const t = setTimeout(() => { tick(); iv = setInterval(tick, 60000) }, ms)
+    return () => { clearTimeout(t); clearInterval(iv) }
   }, [])
 
   useEffect(() => {
-    document.documentElement.style.setProperty('--ide-font-size', `${settings['editor.fontSize']}px`)
+    const fs = Math.min(24, Math.max(10, Number(settings['editor.fontSize']) || 13))
+    document.documentElement.style.setProperty('--ide-font-size', `${fs}px`)
   }, [settings['editor.fontSize']])
 
   useEffect(() => {
@@ -568,6 +569,11 @@ export default function IDEApp({ initialQuotes = [], initialMemes = [], initialC
         return
       }
 
+      // While typing (chat, find, palette, terminal's hidden textarea) only real
+      // Ctrl/Cmd shortcuts apply — not Alt+Z or the Ctrl+K chord (terminal kill-line).
+      const typing = e.target?.closest?.('input, textarea, select, [contenteditable="true"]')
+      if (typing && (!(e.ctrlKey || e.metaKey) || k === 'k')) return
+
       // Second key of a Ctrl+K chord.
       if (chordRef.current && Date.now() - chordRef.current < 1500) {
         chordRef.current = 0
@@ -616,7 +622,7 @@ export default function IDEApp({ initialQuotes = [], initialMemes = [], initialC
 
   const renderTabContent = (tab, active) => {
     switch (tab.kind) {
-      case 'readme':   return readmeContent ?? <ReadmeEditor repos={repos} stack={stack} />
+      case 'readme':   return readmeContent
       case 'memes':    return (
         <MemesEditor
           memeUrl={memeUrl} memeLoading={memeLoading} onNext={fetchMeme}
@@ -807,7 +813,7 @@ export default function IDEApp({ initialQuotes = [], initialMemes = [], initialC
                 { id: 'output',        label: 'Output'        },
                 { id: 'debug-console', label: 'Debug Console' },
                 { id: 'terminal',      label: 'Terminal', badge: terminals.length > 1 ? String(terminals.length) : null },
-                { id: 'ports',         label: 'Ports', badge: '3' },
+                { id: 'ports',         label: 'Ports'         },
               ].map(t => (
                 <div
                   key={t.id}
@@ -861,6 +867,7 @@ export default function IDEApp({ initialQuotes = [], initialMemes = [], initialC
                 onRename={renameTerminal}
                 repos={repos} stack={stack} commits={commits} fileTree={fileTree}
                 themeVars={THEMES[settings['workbench.colorTheme']] || THEMES['Catppuccin Mocha']}
+                fontSize={Math.min(24, Math.max(10, Number(settings['editor.fontSize']) || 13))}
               />
             </div>
           </div>
@@ -894,9 +901,8 @@ export default function IDEApp({ initialQuotes = [], initialMemes = [], initialC
         clock={clock}
         cursor={cursor}
         indent={indent}
-        onOpenGit={() => { setActivityActive('git'); if (!commitsFetched) fetchCommits() }}
-        onOpenExplorer={() => setActivityActive('explorer')}
-        setPanelTab={() => {}}
+        onOpenGit={() => { setActivityActive('git'); setSidebarVisible(true); if (!commitsFetched) fetchCommits() }}
+        onOpenExplorer={() => { setActivityActive('explorer'); setSidebarVisible(true) }}
         onCycleTab={handleCycleTab}
       />
 

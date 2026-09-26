@@ -10,7 +10,7 @@ export function pickMemeUrl(preview, fallback, targetWidth = 500) {
 }
 
 export function stripQuotes(text) {
-  return text ? text.replace(/^["'"']+|["'"']+$/g, '').trim() : ''
+  return text ? text.replace(/^["'\u201C\u201D\u2018\u2019]+|["'\u201C\u201D\u2018\u2019]+$/g, '').trim() : ''
 }
 
 export function parseTags(raw) {
