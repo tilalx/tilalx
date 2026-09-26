@@ -12,7 +12,7 @@ COPY app ./app
 COPY package.json ./
 COPY yarn.lock ./
 COPY .yarnrc.yml ./
-COPY next.config.js ./
+COPY next.config.ts tsconfig.json ./
 # Root files shown in the Explorer; the standalone trace copies them into the image.
 COPY ReadMe.md Dockerfile .gitignore ./
 
