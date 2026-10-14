@@ -49,16 +49,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@huggingface/transformers@npm:^4.3.0":
-  version: 4.3.0
-  resolution: "@huggingface/transformers@npm:4.3.0"
+"@huggingface/transformers@npm:^4.3.1":
+  version: 4.3.1
+  resolution: "@huggingface/transformers@npm:4.3.1"
   dependencies:
     "@huggingface/jinja": "npm:^0.5.10"
     "@huggingface/tokenizers": "npm:^0.2.0"
     onnxruntime-node: "npm:1.30.0"
     onnxruntime-web: "npm:1.31.0-dev.20260914-8d85527a0"
     sharp: "npm:^0.35.4"
-  checksum: 10c0/f8d85cb836f37c03babe3e2e582ab68e8c808a04603e4613fcb3d11953933755cd14bcd69e28f9b844bca751a89ea45db02b84c8addfb1af8b7f053d6722c10d
+  checksum: 10c0/b9e6c609c3f2c165a6d7cdd1c24f07dcf527ff108504aa12ed83a346597bc37fcae36aaa59d0a6c69d762067a8e6c38beadd3481961e80f883f94dcd892c281e
   languageName: node
   linkType: hard
 
@@ -2042,7 +2042,7 @@ __metadata:
   dependencies:
     "@fontsource/inter": "npm:^5.3.0"
     "@fontsource/jetbrains-mono": "npm:^5.3.0"
-    "@huggingface/transformers": "npm:^4.3.0"
+    "@huggingface/transformers": "npm:^4.3.1"
     "@types/node": "npm:^26.6.5"
     "@types/react": "npm:^19.3.0"
     "@types/react-dom": "npm:^19.3.0"
