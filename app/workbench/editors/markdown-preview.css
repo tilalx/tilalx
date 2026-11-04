@@ -1,0 +1,88 @@
+/* Adapted from VS Code's markdown-language-features/media/markdown.css (MIT, © Microsoft),
+   scoped to .markdown-body instead of the preview webview's html/body, plus the webview's default
+   element styles (links, inline code, blockquotes). */
+
+.markdown-preview {
+  position: absolute; inset: 0; overflow: auto;
+  background: var(--vscode-editor-background);
+  color: var(--vscode-editor-foreground);
+  user-select: text;
+}
+
+.markdown-body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", system-ui, "Ubuntu", "Droid Sans", sans-serif;
+  font-size: 14px;
+  padding: 1em 26px 26px;
+  line-height: 22px;
+  word-wrap: break-word;
+}
+
+.markdown-body h1, .markdown-body h2, .markdown-body h3, .markdown-body h4, .markdown-body h5, .markdown-body h6,
+.markdown-body p, .markdown-body ol, .markdown-body ul, .markdown-body pre { margin-top: 0; }
+
+.markdown-body h1, .markdown-body h2, .markdown-body h3, .markdown-body h4, .markdown-body h5, .markdown-body h6 {
+  font-weight: 600; margin-top: 24px; margin-bottom: 16px; line-height: 1.25;
+}
+
+.markdown-body sub, .markdown-body sup { line-height: 0; }
+.markdown-body ul ul:first-child, .markdown-body ul ol:first-child,
+.markdown-body ol ul:first-child, .markdown-body ol ol:first-child { margin-bottom: 0; }
+.markdown-body img, .markdown-body video { max-width: 100%; max-height: 100%; }
+
+.markdown-body a { color: var(--vscode-textLink-foreground); text-decoration: none; }
+.markdown-body a:hover { color: var(--vscode-textLink-activeForeground); text-decoration: underline; }
+.markdown-body a:focus { outline: 1px solid var(--vscode-focusBorder); outline-offset: -1px; }
+
+.markdown-body p { margin-bottom: 16px; }
+.markdown-body li p { margin-bottom: 0.7em; }
+.markdown-body ul, .markdown-body ol { margin-bottom: 0.7em; }
+
+.markdown-body hr { border: 0; height: 1px; border-bottom: 1px solid; }
+
+.markdown-body h1 { font-size: 2em; margin-top: 0; padding-bottom: 0.3em; border-bottom-width: 1px; border-bottom-style: solid; }
+.markdown-body h2 { font-size: 1.5em; padding-bottom: 0.3em; border-bottom-width: 1px; border-bottom-style: solid; }
+.markdown-body h3 { font-size: 1.25em; }
+.markdown-body h4 { font-size: 1em; }
+.markdown-body h5 { font-size: 0.875em; }
+.markdown-body h6 { font-size: 0.85em; }
+
+.markdown-body table { border-collapse: collapse; margin-bottom: 0.7em; }
+.markdown-body th { text-align: left; border-bottom: 1px solid; }
+.markdown-body th, .markdown-body td { padding: 5px 10px; }
+.markdown-body table > tbody > tr + tr > td { border-top: 1px solid; }
+
+.markdown-body blockquote {
+  margin: 0 7px 0 5px; padding: 0 16px 0 10px;
+  border-left: 5px solid var(--vscode-textBlockQuote-border);
+  background: var(--vscode-textBlockQuote-background);
+  border-radius: 2px;
+}
+
+.markdown-body code {
+  font-family: Menlo, Monaco, "Courier New", monospace;
+  font-size: 1em;
+  line-height: 1.357em;
+  color: var(--vscode-textPreformat-foreground);
+  background-color: var(--vscode-textPreformat-background);
+  padding: 1px 3px;
+  border-radius: 4px;
+}
+
+.markdown-body pre {
+  padding: 16px; border-radius: 3px; overflow: auto;
+  background-color: var(--vscode-textCodeBlock-background);
+  border: 1px solid var(--vscode-widget-border);
+}
+
+.markdown-body pre code {
+  display: inline-block;
+  color: var(--vscode-editor-foreground);
+  tab-size: 4;
+  background: none;
+  padding: 0;
+}
+
+.vscode-light .markdown-body th { border-color: rgba(0, 0, 0, 0.69); }
+.vscode-dark .markdown-body th { border-color: rgba(255, 255, 255, 0.69); }
+.vscode-light .markdown-body h1, .vscode-light .markdown-body h2, .vscode-light .markdown-body hr, .vscode-light .markdown-body td { border-color: rgba(0, 0, 0, 0.18); }
+.vscode-dark .markdown-body h1, .vscode-dark .markdown-body h2, .vscode-dark .markdown-body hr, .vscode-dark .markdown-body td { border-color: rgba(255, 255, 255, 0.18); }

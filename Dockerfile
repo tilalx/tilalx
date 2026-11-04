@@ -13,8 +13,9 @@ COPY package.json ./
 COPY yarn.lock ./
 COPY .yarnrc.yml ./
 COPY next.config.ts tsconfig.json ./
-# Root files shown in the Explorer; the standalone trace copies them into the image.
-COPY ReadMe.md Dockerfile .gitignore ./
+# Files shown in the Explorer; next.config.ts lists them for the standalone trace.
+COPY ReadMe.md Dockerfile Jenkinsfile .gitignore .dockerignore ./
+COPY .github ./.github
 
 RUN yarn install
 

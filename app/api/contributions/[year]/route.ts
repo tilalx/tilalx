@@ -14,7 +14,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ year
   try {
     const res = await fetch(
       `https://github-contributions-api.jogruber.de/v4/tilalx?y=${year}`,
-      { next: { revalidate } }
+      { next: { revalidate }, signal: AbortSignal.timeout(5000) }
     )
     if (!res.ok) return NextResponse.json(null, { status: res.status })
     const data = await res.json()

@@ -32,3 +32,4 @@ yarn-error.log*
 
 # local agent config
 .claude/
+.playwright-mcp/

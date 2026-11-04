@@ -22,7 +22,7 @@ pulling a live meme and quote from APIs I run myself. Infrastructure all the way
 
 ## stack
 
-TypeScript · JavaScript · Java · Python · Shell · Nix
+TypeScript · JavaScript · Java · Python · Shell · Nix ·
 Docker · Terraform · Ansible · Kubernetes · Next.js · React
 
 ---
@@ -34,6 +34,7 @@ See [github.com/tilalx](https://github.com/tilalx) for a full list.
 ```
 tilalx          personal page (this repo)
 quotes-rest     API to get random quotes
+meme-api        API serving the meme feed
 msbuild-plugin  Jenkins msbuild plugin
 openems         OpenEMS open source energy management
 ```
