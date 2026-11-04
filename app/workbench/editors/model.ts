@@ -41,10 +41,8 @@ function activate(g: Group, id: string): Group {
 }
 
 export interface OpenOptions {
-  /** Open as a preview (italic) tab that the next preview replaces, like a single click in the Explorer. */
   preview?: boolean
   group?: number | 'side'
-  /** Keep keyboard focus where it is (Explorer single click), instead of moving it into the editor. */
   preserveFocus?: boolean
 }
 
@@ -66,7 +64,6 @@ export function openEditor(s: EditorsState, input: EditorInput, opts: OpenOption
     let tabs: Tab[]
     let mru = g.mru
     if (previewIdx >= 0) {
-      // A preview tab is replaced in place, the way VS Code reuses it.
       mru = mru.filter(m => m !== g.tabs[previewIdx].id)
       tabs = g.tabs.map((t, i) => i === previewIdx ? tab : t)
     } else {
@@ -97,7 +94,6 @@ export function closeTabs(s: EditorsState, groupId: number, ids: string[]): Edit
     const mru  = g.mru.filter(m => !drop.has(m))
     return { ...g, tabs, mru, active: g.active && !drop.has(g.active) ? g.active : mru[0] ?? null }
   })
-  // Empty groups collapse, except the last remaining one.
   const emptied = next.groups.find(g => g.id === groupId)
   if (emptied && emptied.tabs.length === 0 && next.groups.length > 1) {
     const idx    = next.groups.findIndex(g => g.id === groupId)
@@ -124,7 +120,6 @@ export function closeAll(s: EditorsState): EditorsState {
   return { groups: [{ id: s.groups[0].id, tabs: [], active: null, mru: [] }], activeGroup: s.groups[0].id, nextGroupId: s.nextGroupId }
 }
 
-/** Split Editor: new group to the right of the active one, holding a copy of its active tab unless `empty`. */
 export function splitGroup(s: EditorsState, copyActive = true): EditorsState {
   if (s.groups.length >= MAX_GROUPS) {
     const idx = s.groups.findIndex(g => g.id === s.activeGroup)
@@ -139,7 +134,6 @@ export function splitGroup(s: EditorsState, copyActive = true): EditorsState {
   return { groups: [...s.groups.slice(0, at), group, ...s.groups.slice(at)], activeGroup: group.id, nextGroupId: s.nextGroupId + 1 }
 }
 
-/** Drag and drop of a tab, within a group or across groups. */
 export function moveTab(s: EditorsState, from: number, id: string, to: number, index: number): EditorsState {
   const src = s.groups.find(g => g.id === from)
   const tab = src?.tabs.find(t => t.id === id)

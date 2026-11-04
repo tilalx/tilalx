@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react'
 import { Codicon } from '../icons'
+import { pressable } from '../pressable'
 import { useWorkbench } from '../context'
 import { activeTabOf } from '../editors/model'
 import { parseSymbols, symbolPath } from '../symbols'
@@ -22,10 +23,9 @@ export default function Outline() {
       {symbols.map(s => (
         <div
           key={`${s.line}:${s.name}`}
-          role="treeitem"
           className={`list-row${s === current ? ' selected' : ''}`}
           style={{ paddingLeft: 4 + s.depth * 8 }}
-          onClick={() => wb.reveal(path, s.line)}
+          {...pressable(() => wb.reveal(path, s.line), 'treeitem')}
         >
           <span className="tree-lead file" />
           <span className="tree-label">

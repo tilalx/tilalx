@@ -1,10 +1,8 @@
-/** Subsequence match with a preference for contiguous runs and word starts; returns matched indices. */
 export function fuzzyMatch(query: string, target: string): { score: number; indices: number[] } | null {
   if (!query) return { score: 0, indices: [] }
   const q = query.toLowerCase()
   const t = target.toLowerCase()
 
-  // Contiguous substring first: that's what people usually type.
   const at = t.indexOf(q)
   if (at >= 0) {
     const wordStart = at === 0 || /[\s/._\-:]/.test(t[at - 1])

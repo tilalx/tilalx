@@ -23,14 +23,11 @@ export interface Workbench {
   editors: EditorsState
   setEditors(fn: (s: EditorsState) => EditorsState): void
   open(input: EditorInput, opts?: OpenOptions): void
-  /** Bumped whenever the active editor should take keyboard focus. */
   editorFocus: number
   focusEditor(): void
 
-  /** File text as last loaded or edited; undefined while it is still loading. */
   fileText(path: string): string | undefined
   loadFile(path: string): void
-  /** The last load of this path failed; `loadFile` tries again. */
   fileFailed(path: string): boolean
   editFile(path: string, text: string): void
   isDirty(path: string): boolean
@@ -53,7 +50,6 @@ export interface Workbench {
 
   cursor: Cursor
   setCursor(c: Cursor): void
-  /** Line to reveal in a file editor when it opens (from search results, Go to Line, outline). */
   revealLine: { path: string; line: number; nonce: number } | null
   reveal(path: string, line: number): void
 }
@@ -68,7 +64,6 @@ export function useWorkbench(): Workbench {
 
 const subscribeNothing = () => () => {}
 
-/** macOS shows ⌘-style keybindings, everything else Ctrl+. Server render assumes non-mac. */
 export function useIsMac(): boolean {
   return useSyncExternalStore(
     subscribeNothing,
@@ -77,8 +72,4 @@ export function useIsMac(): boolean {
   )
 }
 
-/**
- * Focus and reveal requests already acted on. Shared by every text editor so each request is
- * handled once; opening in the background marks pending focus requests as handled too.
- */
 export const editorRequestsHandled = { focus: 0, reveal: 0 }

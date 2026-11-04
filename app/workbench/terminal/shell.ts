@@ -1,6 +1,5 @@
 import type { Commit, FileNode, GitStatus, Repo } from '../types'
 
-/** A tiny bash look-alike over the Explorer tree. Output lines may contain ANSI colour codes. */
 
 export interface ShellEnv {
   tree: FileNode[]
@@ -65,7 +64,6 @@ function allFiles(nodes: FileNode[]): string[] {
 
 const colorName = (n: FileNode) => n.type === 'folder' ? c.blue(c.bold(n.name)) : /\.(sh)$/.test(n.name) ? c.green(n.name) : n.name
 
-/** Splits a command line into words, honouring single and double quotes. */
 export function tokenize(line: string): string[] {
   const out: string[] = []
   let cur = '', quote: string | null = null, has = false
@@ -77,6 +75,30 @@ export function tokenize(line: string): string[] {
   }
   if (cur || has) out.push(cur)
   return out
+}
+
+export function splitPipes(line: string): string[] {
+  const out: string[] = []
+  let cur = '', quote: string | null = null
+  for (const ch of line) {
+    if (quote) { if (ch === quote) quote = null }
+    else if (ch === '"' || ch === "'") quote = ch
+    else if (ch === '|') { out.push(cur); cur = ''; continue }
+    cur += ch
+  }
+  out.push(cur)
+  return out
+}
+
+export const stripControl = (text: string) => text.replace(/[\x00-\x08\x0b-\x1f\x7f-\x9f]/g, '')
+
+function lineCount(args: string[]): { n: number; rest: string[] } {
+  const i = args.indexOf('-n')
+  const short = args.findIndex(a => /^-\d+$/.test(a))
+  const raw = i >= 0 ? args[i + 1] : short >= 0 ? args[short].slice(1) : '10'
+  const n = Number(raw)
+  const drop = new Set(i >= 0 ? [i, i + 1] : [short])
+  return { n: Number.isInteger(n) && n >= 0 ? n : 10, rest: args.filter((a, j) => !drop.has(j) && !a.startsWith('-')) }
 }
 
 type Cmd = (args: string[], stdin: string[] | null, st: ShellState, env: ShellEnv) => Promise<Output> | Output
@@ -91,7 +113,7 @@ async function readArgOrStdin(args: string[], stdin: string[] | null, st: ShellS
     if (node.type === 'folder') return `${name}: ${a}: Is a directory`
     const text = await env.readFile(p!)
     if (text === null) return `${name}: ${a}: Permission denied`
-    lines.push(...text.replace(/\n$/, '').split('\n'))
+    lines.push(...stripControl(text.replace(/\r?\n$/, '')).split('\n'))
   }
   return lines
 }
@@ -149,14 +171,14 @@ const COMMANDS: Record<string, Cmd> = {
   },
   cat: async (args, stdin, st, env) => { const r = await readArgOrStdin(args, stdin, st, env, 'cat'); return typeof r === 'string' ? [r] : r },
   head: async (args, stdin, st, env) => {
-    const n = Number(args.find(a => /^-\d+$/.test(a))?.slice(1) ?? (args.includes('-n') ? args[args.indexOf('-n') + 1] : 10))
-    const r = await readArgOrStdin(args.filter(a => !/^-/.test(a) && a !== String(n)), stdin, st, env, 'head')
+    const { n, rest } = lineCount(args)
+    const r = await readArgOrStdin(rest, stdin, st, env, 'head')
     return typeof r === 'string' ? [r] : r.slice(0, n)
   },
   tail: async (args, stdin, st, env) => {
-    const n = Number(args.find(a => /^-\d+$/.test(a))?.slice(1) ?? (args.includes('-n') ? args[args.indexOf('-n') + 1] : 10))
-    const r = await readArgOrStdin(args.filter(a => !/^-/.test(a) && a !== String(n)), stdin, st, env, 'tail')
-    return typeof r === 'string' ? [r] : r.slice(-n)
+    const { n, rest } = lineCount(args)
+    const r = await readArgOrStdin(rest, stdin, st, env, 'tail')
+    return typeof r === 'string' ? [r] : n === 0 ? [] : r.slice(-n)
   },
   wc: async (args, stdin, st, env) => {
     const r = await readArgOrStdin(args.filter(a => !a.startsWith('-')), stdin, st, env, 'wc')
@@ -265,7 +287,7 @@ const COMMANDS: Record<string, Cmd> = {
       const res  = await fetch('/api/fetch', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url }) })
       const json = await res.json()
       if (json.error) return [`curl: ${json.error}`]
-      return (json.text as string).split('\n').slice(0, 200)
+      return stripControl(json.text as string).split('\n').slice(0, 200)
     } catch (e) { return [`curl: ${(e as Error).message}`] }
   },
   sudo: () => ['tilo is not in the sudoers file. This incident will be reported.'],
@@ -274,12 +296,11 @@ const COMMANDS: Record<string, Cmd> = {
 
 export const COMMAND_NAMES = Object.keys(COMMANDS)
 
-/** Runs a command line with `|` pipes. */
 export async function run(line: string, st: ShellState, env: ShellEnv): Promise<Output> {
-  const stages = line.split('|').map(s => tokenize(s.trim())).filter(s => s.length)
+  const stages = splitPipes(line).map(s => tokenize(s.trim())).filter(s => s.length)
   let stdin: string[] | null = null
   for (const [name, ...args] of stages) {
-    const cmd = COMMANDS[name]
+    const cmd = Object.hasOwn(COMMANDS, name) ? COMMANDS[name] : undefined
     if (!cmd) return [`${name}: command not found`]
     const out: Output = await cmd(args, stdin, st, env)
     if (out === 'clear') return 'clear'
@@ -288,18 +309,21 @@ export async function run(line: string, st: ShellState, env: ShellEnv): Promise<
   return stdin ?? []
 }
 
-/** Tab completion for the word under the cursor: command names first, then paths. */
-export function complete(line: string, st: ShellState, env: ShellEnv): string[] {
-  const words = tokenize(line)
-  const current = /\s$/.test(line) ? '' : words.pop() ?? ''
-  if (!words.length && !/\s$/.test(line)) return COMMAND_NAMES.filter(n => n.startsWith(current))
+export function complete(line: string, st: ShellState, env: ShellEnv): { word: string; options: string[] } {
+  const segment = splitPipes(line).pop() ?? ''
+  const words = tokenize(segment)
+  const current = /\s$/.test(segment) ? '' : words.pop() ?? ''
+  if (!words.length && !/\s$/.test(segment)) return { word: current, options: COMMAND_NAMES.filter(n => n.startsWith(current)) }
   const slash = current.lastIndexOf('/')
   const dirPart = slash >= 0 ? current.slice(0, slash + 1) : ''
   const base = resolvePath(st.cwd, dirPart || '.')
   const node = base === null ? null : nodeAt(env.tree, base)
-  if (!node || node.type !== 'folder') return []
+  if (!node || node.type !== 'folder') return { word: current, options: [] }
   const rest = current.slice(slash + 1)
-  return ((node as { children?: FileNode[] }).children ?? [])
-    .filter(n => n.name.startsWith(rest))
-    .map(n => dirPart + n.name + (n.type === 'folder' ? '/' : ''))
+  return {
+    word: current,
+    options: ((node as { children?: FileNode[] }).children ?? [])
+      .filter(n => n.name.startsWith(rest))
+      .map(n => dirPart + n.name + (n.type === 'folder' ? '/' : '')),
+  }
 }

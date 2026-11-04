@@ -23,7 +23,6 @@ interface Item {
   description?: string
   icon?: ReactNode
   keybinding?: string
-  /** Group separator label shown on the first item of a group, right-aligned like VS Code. */
   group?: string
   run(): void
 }
@@ -46,7 +45,6 @@ export default function QuickInput({ mode: initialMode, initialValue, onClose }:
   const wb  = useWorkbench()
   const mac = useIsMac()
   const [value, setValue] = useState(initialMode === 'commands' && !initialValue.startsWith('>') ? `>${initialValue}` : initialValue)
-  // The theme picker opens on the current theme, so the live preview doesn't switch it right away.
   const [focus, setFocus] = useState(() => initialMode === 'themes' ? Math.max(0, Object.keys(THEMES).indexOf(wb.theme.id)) : 0)
   const inputRef = useRef<HTMLInputElement>(null)
   const listRef  = useRef<HTMLDivElement>(null)
@@ -116,11 +114,10 @@ export default function QuickInput({ mode: initialMode, initialValue, onClose }:
       return (Object.keys(THEMES) as ThemeId[]).map((id, i) => ({
         id, label: THEMES[id].label, indices: fuzzyMatch(value, THEMES[id].label)?.indices,
         group: i === 0 ? `${THEMES[id].type} themes` : THEMES[id].type !== THEMES[(Object.keys(THEMES) as ThemeId[])[i - 1]].type ? `${THEMES[id].type} themes` : undefined,
-        run: () => { originalTheme.current = id; onClose() },
+        run: () => { wb.setTheme(id); originalTheme.current = id; onClose() },
       })).filter(it => fuzzyMatch(value, it.label))
     }
 
-    // files: recently opened editors first, then fuzzy file matches. "name:42" opens the match at line 42.
     const withLine = /^(.+):(\d*)$/.exec(value.trim())
     const q    = withLine ? withLine[1] : value.trim()
     const line = withLine ? parseInt(withLine[2], 10) || undefined : undefined
@@ -152,7 +149,6 @@ export default function QuickInput({ mode: initialMode, initialValue, onClose }:
     return [...recent, ...files]
   }, [mode, value, wb, onClose, activePath, light])
 
-  // Live theme preview while moving through the theme picker; Escape restores.
   const focusedId = items[focus]?.id
   useEffect(() => {
     if (mode === 'themes' && focusedId && focusedId in THEMES && focusedId !== wb.theme.id) wb.setTheme(focusedId as ThemeId)

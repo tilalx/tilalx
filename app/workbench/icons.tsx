@@ -8,7 +8,6 @@ export function Codicon({ name, size, className = '', style, ...rest }: CodiconP
   return <span aria-hidden="true" className={`codicon codicon-${name} ${className}`} style={s} {...rest} />
 }
 
-/** Seti glyph for a file, coloured like VS Code's default file icon theme. */
 export function FileIcon({ path, light = false, className = '' }: { path: string; light?: boolean; className?: string }) {
   const { char, color } = setiIcon(path, light)
   return <span aria-hidden="true" className={`seti-icon ${className}`} style={{ color }}>{char}</span>

@@ -1,6 +1,3 @@
-/* Widgets, views and editors. Same token-driven approach as workbench.css. */
-
-/* ── Shared bits ───────────────────────────────────────────── */
 .pane-message, .panel-message { padding: 4px 20px; color: var(--vscode-descriptionForeground); line-height: 1.4; white-space: normal; user-select: text; }
 .panel-message { padding: 10px 20px; }
 .pane-message a, .panel-message a, .welcome-view a { color: var(--vscode-textLink-foreground); text-decoration: none; }
@@ -43,7 +40,6 @@
   border-color: var(--vscode-inputOption-activeBorder);
 }
 
-/* Checkbox in VS Code's style: the native input is visually hidden. */
 .welcome-footer input, .setting-checkbox input { position: absolute; opacity: 0; width: 1px; height: 1px; }
 .checkbox {
   display: inline-flex; align-items: center; justify-content: center; flex: none;
@@ -55,13 +51,11 @@
 input:checked + .checkbox .codicon { visibility: visible; }
 input:focus-visible + .checkbox { outline: 1px solid var(--vscode-focusBorder); }
 
-/* Symbol icon colors (VS Code's symbolIcon.* defaults). */
 .symbol-icon.symbol-function { color: var(--vscode-symbolIcon-functionForeground, #b180d7); }
 .symbol-icon.symbol-class, .symbol-icon.symbol-enum { color: var(--vscode-symbolIcon-classForeground, #ee9d28); }
 .symbol-icon.symbol-interface, .symbol-icon.symbol-constant, .symbol-icon.symbol-variable, .symbol-icon.symbol-key { color: var(--vscode-symbolIcon-variableForeground, #75beff); }
 .symbol-icon.symbol-module, .symbol-icon.symbol-string { color: var(--vscode-symbolIcon-stringForeground, var(--vscode-foreground)); }
 
-/* ── Quick input ───────────────────────────────────────────── */
 .quick-input-backdrop { position: fixed; inset: 0; z-index: 2549; }
 .quick-input-widget {
   position: fixed; top: 6px; left: 50%; transform: translateX(-50%); z-index: 2550;
@@ -98,7 +92,6 @@ input:focus-visible + .checkbox { outline: 1px solid var(--vscode-focusBorder); 
 .quick-group { color: var(--vscode-pickerGroup-foreground); }
 .quick-row.focused .quick-group { color: inherit; }
 
-/* ── Context menu ──────────────────────────────────────────── */
 .monaco-menu {
   position: fixed; z-index: 2600; min-width: 160px; padding: 4px 0;
   font-size: 13px; line-height: 1;
@@ -116,7 +109,6 @@ input:focus-visible + .checkbox { outline: 1px solid var(--vscode-focusBorder); 
 .menu-submenu { margin-right: 6px; }
 .menu-separator { height: 0; margin: 5px 0; border-bottom: 1px solid var(--vscode-menu-separatorBackground); }
 
-/* ── Notifications ─────────────────────────────────────────── */
 .notifications-toasts { position: fixed; right: 7px; bottom: 29px; z-index: 1000; display: flex; flex-direction: column; gap: 6px; width: 450px; max-width: calc(100vw - 14px); }
 .notification-toast {
   display: flex; align-items: flex-start; gap: 8px; padding: 10px 8px 10px 12px; border-radius: 4px;
@@ -132,7 +124,6 @@ input:focus-visible + .checkbox { outline: 1px solid var(--vscode-focusBorder); 
 .notification-toast .message { flex: 1; user-select: text; }
 @keyframes toast-in { from { opacity: 0; transform: translateY(100%); } to { opacity: 1; transform: none; } }
 
-/* ── Panel ─────────────────────────────────────────────────── */
 .panel-container { flex: none; position: relative; display: flex; min-height: 0; border-top: 1px solid var(--vscode-panel-border); }
 .panel { flex: 1; display: flex; flex-direction: column; min-width: 0; background: var(--vscode-panel-background); }
 .panel-title { flex: none; height: 35px; display: flex; align-items: center; justify-content: space-between; padding-left: 8px; }
@@ -158,7 +149,6 @@ input:focus-visible + .checkbox { outline: 1px solid var(--vscode-focusBorder); 
 
 .monaco-workbench .feed-icon { margin-right: 6px; color: var(--vscode-icon-foreground); }
 
-/* ── Sidebar views ─────────────────────────────────────────── */
 .search-view { padding-top: 0; }
 .search-widget { display: flex; align-items: flex-start; padding: 0 12px 0 4px; margin-bottom: 4px; }
 .search-replace-toggle { width: 16px; height: 26px; display: flex; align-items: center; justify-content: center; margin-right: 1px; opacity: 0.5; cursor: default; }
@@ -173,7 +163,8 @@ input:focus-visible + .checkbox { outline: 1px solid var(--vscode-focusBorder); 
 }
 
 .scm-input { padding: 4px 12px 8px 20px; display: flex; flex-direction: column; gap: 6px; }
-.scm-input textarea { min-height: 26px; }
+.scm-input textarea { min-height: 26px; max-height: 134px; field-sizing: content; overflow-y: auto; scrollbar-width: thin; }
+.scm-input textarea::placeholder { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .scm-commit { width: 100%; }
 .scm-group .name { font-weight: 400; }
 .scm-graph .list-row { padding-left: 8px; }
@@ -210,7 +201,6 @@ input:focus-visible + .checkbox { outline: 1px solid var(--vscode-focusBorder); 
   color: #fff; font-weight: 700; font-family: var(--wb-font); text-shadow: 0 1px 1px rgba(0, 0, 0, 0.4);
 }
 
-/* ── Editors ───────────────────────────────────────────────── */
 .editor-instance { position: absolute; inset: 0; }
 .binary-editor { position: absolute; inset: 0; padding: 0 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; line-height: 1.4; }
 .binary-editor p { margin: 0 0 8px; max-width: 480px; }
@@ -315,9 +305,25 @@ input:focus-visible + .checkbox { outline: 1px solid var(--vscode-focusBorder); 
 .feed-toolbar { flex: none; display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 12px 0 20px; border-bottom: 1px solid var(--vscode-editorGroup-border); }
 .feed-title { flex: 1; color: var(--vscode-descriptionForeground); font-size: 12px; }
 .feed-body { flex: 1; overflow: auto; }
-.meme-grid { columns: 3 280px; column-gap: 12px; padding: 16px 20px; }
-.meme { display: block; margin-bottom: 12px; break-inside: avoid; border-radius: 4px; overflow: hidden; border: 1px solid var(--vscode-editorGroup-border); }
-.meme img { display: block; width: 100%; }
+.meme-feed { display: flex; flex-wrap: wrap; gap: 12px; padding: 16px 20px; }
+.meme-feed::after { content: ''; flex: 1000 1 0; }
+.meme { display: block; padding: 0; cursor: pointer; transition: border-color 0.1s; flex: var(--ar) 1 calc(var(--ar) * 260px); aspect-ratio: var(--ar); max-height: 70vh; border-radius: 4px; overflow: hidden; border: 1px solid var(--vscode-editorGroup-border); background: rgba(128, 128, 128, 0.08); }
+.meme img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.meme:hover, .meme:focus-visible { border-color: var(--vscode-focusBorder); outline: none; }
+.meme-dialog {
+  padding: 0; max-width: min(92vw, 1100px); max-height: 92vh; display: flex; flex-direction: column; overflow: hidden;
+  border: 1px solid var(--vscode-widget-border, var(--vscode-editorGroup-border)); border-radius: 6px;
+  background: var(--vscode-editorWidget-background); color: var(--vscode-editorWidget-foreground, var(--vscode-foreground));
+  box-shadow: 0 0 8px 2px var(--vscode-widget-shadow, rgba(0, 0, 0, 0.36)); font: 13px var(--wb-font);
+}
+.meme-dialog:not([open]) { display: none; }
+.meme-dialog::backdrop { background: rgba(0, 0, 0, 0.5); }
+.meme-dialog-header { display: flex; align-items: center; gap: 2px; height: 35px; padding: 0 6px 0 12px; border-bottom: 1px solid var(--vscode-editorGroup-border); }
+.meme-dialog-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.meme-dialog-image { display: block; min-height: 0; max-width: 100%; max-height: calc(92vh - 70px); margin: 0 auto; object-fit: contain; }
+.meme-dialog-footer { display: flex; gap: 14px; align-items: center; height: 26px; padding: 0 12px; font-size: 12px; color: var(--vscode-descriptionForeground); border-top: 1px solid var(--vscode-editorGroup-border); }
+.meme-dialog-count { margin-left: auto; }
+.meme-more { order: 1; flex-basis: 100%; min-height: 40px; text-align: center; color: var(--vscode-descriptionForeground); font-size: 12px; }
 .feed-body.log { padding: 8px 20px; font: 12px Menlo, Monaco, 'Courier New', monospace; line-height: 20px; user-select: text; }
 .log-line { display: grid; grid-template-columns: auto auto 1fr; padding: 2px 0; }
 .log-msg { white-space: pre-wrap; }
@@ -325,15 +331,18 @@ input:focus-visible + .checkbox { outline: 1px solid var(--vscode-focusBorder); 
 .log-level { color: #4ec9b0; margin-right: 8px; }
 .log-author { color: var(--vscode-descriptionForeground); }
 .log-tag { margin-left: 6px; color: #c586c0; }
-.contrib { padding: 20px; }
+.contrib { padding: 20px; max-width: 1400px; --gap: 3px; --label: 30px; }
 .contrib-total { margin-bottom: 10px; }
-.contrib-grid { display: flex; gap: 3px; overflow-x: auto; padding-bottom: 6px; }
-.contrib-months { display: flex; gap: 3px; margin-left: 33px; height: 15px; font-size: 11px; color: var(--vscode-descriptionForeground); }
-.contrib-months span { width: 12px; flex: none; overflow: visible; white-space: nowrap; }
-.contrib-days { display: flex; flex-direction: column; gap: 3px; width: 30px; flex: none; font-size: 11px; color: var(--vscode-descriptionForeground); }
-.contrib-days span { height: 12px; line-height: 12px; }
-.contrib-week { display: flex; flex-direction: column; gap: 3px; }
+.contrib-months, .contrib-grid { display: grid; grid-template-columns: var(--label) repeat(var(--weeks), minmax(10px, 1fr)); gap: var(--gap); min-width: calc(var(--label) + var(--weeks) * 13px); }
+.contrib-grid { padding-bottom: 6px; }
+.contrib-months { height: 15px; font-size: 11px; color: var(--vscode-descriptionForeground); }
+.contrib-months::before { content: ''; }
+.contrib-months span { overflow: visible; white-space: nowrap; }
+.contrib-days { display: grid; grid-template-rows: repeat(7, minmax(0, 1fr)); gap: var(--gap); font-size: 11px; color: var(--vscode-descriptionForeground); }
+.contrib-days span { display: flex; align-items: center; min-height: 0; line-height: 0; overflow: visible; }
+.contrib-week { display: grid; grid-template-rows: repeat(7, auto); gap: var(--gap); align-content: start; }
 .contrib-cell { display: inline-block; width: 12px; height: 12px; border-radius: 2px; background: rgba(128, 128, 128, 0.15); }
+.contrib-week .contrib-cell { width: 100%; height: auto; aspect-ratio: 1; }
 .contrib-cell.empty { background: transparent; }
 .contrib-cell.l1 { background: #0e4429; } .contrib-cell.l2 { background: #006d32; } .contrib-cell.l3 { background: #26a641; } .contrib-cell.l4 { background: #39d353; }
 .vs .contrib-cell.l1 { background: #9be9a8; } .vs .contrib-cell.l2 { background: #40c463; } .vs .contrib-cell.l3 { background: #30a14e; } .vs .contrib-cell.l4 { background: #216e39; }
@@ -342,7 +351,6 @@ input:focus-visible + .checkbox { outline: 1px solid var(--vscode-focusBorder); 
 .codicon-modifier-spin { animation: codicon-spin 1.5s steps(30) infinite; }
 @keyframes codicon-spin { to { transform: rotate(360deg); } }
 
-/* ── Zen mode ──────────────────────────────────────────────── */
 .zen .title-container, .zen .breadcrumbs { display: none; }
 .zen-exit { position: fixed; top: 8px; right: 12px; z-index: 40; opacity: 0.6; }
 .zen-exit:hover, .zen-exit:focus-visible { opacity: 1; }

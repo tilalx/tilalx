@@ -14,7 +14,7 @@ export default function StatusBar({ onBell }: { onBell(): void }) {
   const { line, column, selected } = wb.cursor
 
   return (
-    <footer className="statusbar" role="status">
+    <footer className="statusbar" aria-label="Status Bar">
       <div className="items left">
         <a className="statusbar-item remote" title="Open GitHub profile" href="https://github.com/tilalx" target="_blank" rel="noopener noreferrer">
           <Codicon name="remote" />

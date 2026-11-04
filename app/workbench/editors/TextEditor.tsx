@@ -7,11 +7,13 @@ import { languageOf } from '../languages'
 import { editorFont, loadMonaco } from './monaco'
 import type { Monaco } from './monaco'
 
-/** One Monaco model per file, shared by every group that shows it (like VS Code's text file models). */
 function modelFor(monaco: Monaco, path: string, text: string): MonacoEditor.ITextModel {
   const uri = monaco.Uri.parse(`file:///tilalx/${path}`)
   const existing = monaco.editor.getModel(uri)
-  if (existing) return existing
+  if (existing) {
+    if (existing.getValue() !== text) existing.setValue(text)
+    return existing
+  }
   return monaco.editor.createModel(text, languageOf(path).grammar ?? 'plaintext', uri)
 }
 
@@ -22,7 +24,6 @@ export default function TextEditor({ path, active, onPin }: { path: string; acti
   const [monaco, setMonaco] = useState<Monaco | null>(null)
   const text    = wb.fileText(path)
 
-  // Latest workbench callbacks for Monaco listeners registered once.
   const wbRef = useRef(wb)
   wbRef.current = wb
   const activeRef = useRef(active)
@@ -68,16 +69,14 @@ export default function TextEditor({ path, active, onPin }: { path: string; acti
       ed.onDidFocusEditorText(report),
       model.onDidChangeContent(() => {
         wbRef.current.editFile(path, model.getValue())
-        onPin()
+        if (ed.hasTextFocus()) onPin()
       }),
     ]
     report()
     return () => { subs.forEach(s => s.dispose()); ed.dispose(); editor.current = null }
-    // The editor is created once per file; content changes flow through the model.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [monaco, path, text === undefined])
 
-  // Reverting or saving replaces the text from outside Monaco.
   useEffect(() => {
     const model = editor.current?.getModel()
     if (model && text !== undefined && model.getValue() !== text) model.setValue(text)
@@ -100,14 +99,11 @@ export default function TextEditor({ path, active, onPin }: { path: string; acti
     })
   }, [settings, path, monaco, text === undefined])
 
-  // Report this editor's cursor when it becomes the active one.
   useEffect(() => {
     const pos = editor.current?.getPosition()
     if (active && pos) wbRef.current.setCursor({ line: pos.lineNumber, column: pos.column, selected: 0 })
   }, [active, monaco, text === undefined])
 
-  // Take focus only when asked (opening without preserveFocus, clicking the tab), and only once per request:
-  // the counter never resets, so an editor activated later must not treat an old request as its own.
   const focusRequest = wb.editorFocus
   useEffect(() => {
     if (!active || !editor.current || focusRequest <= editorRequestsHandled.focus) return

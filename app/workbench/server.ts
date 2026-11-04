@@ -1,12 +1,11 @@
 import fs   from 'fs'
 import path from 'path'
 import { execSync } from 'child_process'
-import vm from 'vm'
+import { Worker } from 'worker_threads'
 import { README_PATH } from './paths'
+import { timeAgo } from './format'
 import type { Commit, FileNode, GitStatus, Meme, Quote, Repo, StackItem, WorkbenchData } from './types'
 
-// Files are declared for tracing in next.config.ts (outputFileTracingIncludes); the fs calls below
-// opt out of Turbopack's static analysis, which would otherwise pull in the whole project.
 const ROOT = process.cwd()
 
 const ROOT_FILES = ['.dockerignore', '.gitignore', '.yarnrc.yml', 'Dockerfile', 'Jenkinsfile', 'next.config.ts', 'package.json', 'ReadMe.md', 'tsconfig.json']
@@ -21,7 +20,6 @@ const LANG_COLORS: Record<string, string> = {
   Dart: '#00b4ab', Nix: '#7e7eff', HCL: '#844fba', Dockerfile: '#384d54', Groovy: '#4298b8',
 }
 
-/** Explorer order: folders first, then names compared like VS Code's default `explorer.sortOrder`. */
 function compareEntries(a: FileNode, b: FileNode): number {
   if (a.type !== b.type) return a.type === 'folder' ? -1 : 1
   return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' })
@@ -44,7 +42,6 @@ function scanDir(rel: string): FileNode[] {
 
 let cachedTree: FileNode[] | null = null
 
-/** The tree is fixed in a built image, so production scans the disk once; dev rescans to pick up edits. */
 export function buildFileTree(): FileNode[] {
   if (cachedTree && process.env.NODE_ENV === 'production') return cachedTree
   cachedTree = scanTree()
@@ -66,7 +63,6 @@ export function filePaths(tree: FileNode[]): string[] {
   return tree.flatMap(n => n.type === 'folder' ? filePaths(n.children ?? []) : [n.path])
 }
 
-/** Reads a file only if it is part of the Explorer tree, so the route can't be used to read anything else. */
 export function readTreeFile(rel: string): string | null {
   if (!filePaths(buildFileTree()).includes(rel)) return null
   try { return fs.readFileSync(path.join(/*turbopackIgnore: true*/ ROOT, rel), 'utf8') }
@@ -82,27 +78,21 @@ function gitStatus(): Record<string, GitStatus> {
   const out: Record<string, GitStatus> = {}
   for (const line of git('status --porcelain -uall').split('\n').filter(Boolean)) {
     const code = line.slice(0, 2)
-    // Renames read "old -> new"; the Explorer shows the new path. Paths with spaces come quoted.
     const file = line.slice(3).split(' -> ').pop()!.replace(/^"|"$/g, '').replace(/\/$/, '')
     out[file] = code === '??' ? 'U' : code.includes('A') ? 'A' : code.includes('D') ? 'D' : 'M'
   }
   return out
 }
 
-/** Upstream APIs are awaited on every page view, so a hung one must not hang the site. */
-const UPSTREAM_TIMEOUT = 3000 // ms
+const UPSTREAM_TIMEOUT = 3000
 
 interface QuoteApiItem { content: string; author: string; tags: string }
-interface MemeApiItem  { url?: string; preview?: string[] }
+interface MemeApiItem  { url?: string; preview?: string[]; title?: string; postLink?: string; subreddit?: string; author?: string; ups?: number }
 interface GhRepo {
   name: string; description: string | null; language: string | null
   stargazers_count: number; pushed_at: string; fork: boolean; html_url: string
 }
 
-/**
- * Strips surrounding quote marks, and repairs apostrophes the quotes API stores as `$`
- * ("don$t" → "don’t"). Only a `$` between two letters is touched, so amounts like "$5" survive.
- */
 function cleanQuote(text: string | null | undefined): string {
   if (!text) return ''
   return text
@@ -113,7 +103,6 @@ function cleanQuote(text: string | null | undefined): string {
 
 function parseTags(raw: string | null | undefined): string[] {
   if (!raw) return []
-  // The API sometimes repeats a tag ("Wisdom, Wisdom").
   return [...new Set(raw.replace(/^\[|\]$/g, '').split(',').map(t => t.trim()).filter(Boolean))]
 }
 
@@ -138,16 +127,18 @@ export async function fetchQuotes(count = 10): Promise<Quote[]> {
   } catch { return [] }
 }
 
-export async function fetchMemes(count = 10): Promise<Meme[]> {
+export async function fetchMemes(count = 30, subreddit?: string): Promise<Meme[]> {
   try {
-    const res = await fetch(`https://meme-api.aelx.de/gimme/${count}`, { cache: 'no-store', signal: AbortSignal.timeout(UPSTREAM_TIMEOUT) })
+    const res = await fetch(`https://meme-api.aelx.de/gimme/${subreddit ? `${subreddit}/` : ''}${count}?nsfw=false&spoiler=false`, { cache: 'no-store', signal: AbortSignal.timeout(UPSTREAM_TIMEOUT) })
     if (!res.ok) return []
     const data = await res.json()
     return ((data.memes || []) as MemeApiItem[])
       .filter((m): m is MemeApiItem & { url: string } => !!m.url)
-      // The meme API can return the same post twice in one batch.
       .filter((m, i, all) => all.findIndex(x => x.url === m.url) === i)
-      .map(m => ({ url: m.url, thumb: pickMemeUrl(m.preview, m.url) }))
+      .map(m => ({
+        url: m.url, thumb: pickMemeUrl(m.preview, m.url), title: m.title ?? '', postLink: m.postLink ?? m.url,
+        subreddit: m.subreddit ?? '', author: m.author ?? '', ups: m.ups ?? 0,
+      }))
   } catch { return [] }
 }
 
@@ -174,12 +165,26 @@ async function fetchCommits(): Promise<Commit[]> {
   } catch { return [] }
 }
 
+export function withLiveRepos(readme: string, repos: Repo[], count = 8): string {
+  const recent = repos.slice(0, count)
+  if (!recent.length) return readme
+  const width = Math.max(...recent.map(r => r.name.length)) + 2
+  const rows = recent.map(r => {
+    const desc = (r.description ?? '').replace(/\s+/g, ' ').trim()
+    const ago  = timeAgo(r.pushed_at)
+    const meta = [r.language, r.fork && 'fork', ago === 'now' ? 'just now' : `${ago} ago`].filter(Boolean).join(' · ')
+    const text = desc.length > 44 ? `${desc.slice(0, 43)}…` : desc
+    return `${r.name.padEnd(width)}${text.padEnd(46)}${meta}`
+  })
+  return readme.replace(/(<!-- repos:start -->\n)[\s\S]*?(\n<!-- repos:end -->)/, `$1\`\`\`\n${rows.join('\n')}\n\`\`\`$2`)
+}
+
 export async function loadWorkbenchData(): Promise<WorkbenchData> {
   const [quotes, memes, { repos, stack }, commits] = await Promise.all([fetchQuotes(), fetchMemes(), fetchRepos(), fetchCommits()])
   const readme = readTreeFile(README_PATH)
   return {
     tree:   buildFileTree(),
-    files:  readme === null ? {} : { [README_PATH]: readme },
+    files:  readme === null ? {} : { [README_PATH]: withLiveRepos(readme, repos) },
     git:    gitStatus(),
     branch: git('rev-parse --abbrev-ref HEAD') || 'main',
     repos, stack, quotes, memes, commits,
@@ -190,13 +195,14 @@ export interface SearchMatch { line: number; text: string; start: number; end: n
 export interface SearchResult { path: string; matches: SearchMatch[] }
 
 const MAX_MATCHES   = 2000
-const SEARCH_BUDGET = 1000 // ms
+const SEARCH_BUDGET = 1000
 
-/**
- * Runs in a vm context so the time budget can interrupt the regex: the pattern comes from the
- * request, and a catastrophic one like `(a+)+$` would otherwise block the server's event loop.
- */
-const MATCHER = new vm.Script(`
+const MAX_SEARCHES  = 4
+let running = 0
+
+const MATCHER = `
+  const { parentPort, workerData: { files, source, flags, max } } = require('worker_threads')
+  const re = new RegExp(source, flags)
   const results = []
   let total = 0
   for (const [rel, text] of files) {
@@ -214,10 +220,23 @@ const MATCHER = new vm.Script(`
     }
     if (matches.length) results.push({ path: rel, matches })
   }
-  JSON.stringify(results)
-`)
+  parentPort.postMessage(results)
+`
 
-export function searchTree(query: string, opts: { caseSensitive: boolean; wholeWord: boolean; regex: boolean }): SearchResult[] | { error: string } {
+let cachedFiles: [string, string][] | null = null
+
+function searchableFiles(): [string, string][] {
+  if (cachedFiles && process.env.NODE_ENV === 'production') return cachedFiles
+  const files: [string, string][] = []
+  for (const rel of filePaths(buildFileTree())) {
+    if (rel === 'yarn.lock' || /\.(woff2?|ttf|png|jpe?g|ico)$/i.test(rel)) continue
+    try { files.push([rel, fs.readFileSync(path.join(/*turbopackIgnore: true*/ ROOT, rel), 'utf8')]) } catch {}
+  }
+  cachedFiles = files
+  return files
+}
+
+export async function searchTree(query: string, opts: { caseSensitive: boolean; wholeWord: boolean; regex: boolean }): Promise<SearchResult[] | { error: string }> {
   let re: RegExp
   try {
     const src = opts.regex ? query : query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
@@ -225,15 +244,16 @@ export function searchTree(query: string, opts: { caseSensitive: boolean; wholeW
   } catch (e) {
     return { error: (e as Error).message }
   }
-  const files: [string, string][] = []
-  for (const rel of filePaths(buildFileTree())) {
-    if (rel === 'yarn.lock' || /\.(woff2?|ttf|png|jpe?g|ico)$/i.test(rel)) continue
-    try { files.push([rel, fs.readFileSync(path.join(/*turbopackIgnore: true*/ ROOT, rel), 'utf8')]) } catch {}
-  }
+  if (running >= MAX_SEARCHES) return { error: 'Search is busy. Try again in a moment.' }
+  running++
   try {
-    // JSON keeps objects created inside the context from leaking its prototypes out.
-    return JSON.parse(MATCHER.runInNewContext({ files, re, max: MAX_MATCHES }, { timeout: SEARCH_BUDGET }))
-  } catch {
-    return { error: 'Search took too long. Try a simpler pattern.' }
+    return await new Promise(resolve => {
+      const worker = new Worker(MATCHER, { eval: true, workerData: { files: searchableFiles(), source: re.source, flags: re.flags, max: MAX_MATCHES } })
+      const timer = setTimeout(() => { worker.terminate(); resolve({ error: 'Search took too long. Try a simpler pattern.' }) }, SEARCH_BUDGET)
+      worker.once('message', (r: SearchResult[]) => { clearTimeout(timer); worker.terminate(); resolve(r) })
+      worker.once('error', () => { clearTimeout(timer); resolve({ error: 'Search failed.' }) })
+    })
+  } finally {
+    running--
   }
 }

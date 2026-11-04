@@ -1,5 +1,3 @@
-// Monaco core + editor contributions, without Monaco's own languages (Shiki tokenizes with VS Code's grammars).
-// Mirrors monaco-editor/esm/vs/editor/editor.main.js minus language definitions/features.
 import 'monaco-editor/editor/contrib/anchorSelect/browser/anchorSelect.js';
 import 'monaco-editor/editor/contrib/bracketMatching/browser/bracketMatching.js';
 import 'monaco-editor/editor/contrib/caretOperations/browser/transpose.js';

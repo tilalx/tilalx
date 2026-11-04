@@ -5,7 +5,6 @@ export interface FileNode {
   children?: FileNode[]
 }
 
-/** Git status letter as VS Code's SCM decorations show it. */
 export type GitStatus = 'M' | 'U' | 'A' | 'D'
 
 export interface Repo {
@@ -20,7 +19,7 @@ export interface Repo {
 
 export interface StackItem { name: string; color: string }
 export interface Quote { content: string; author: string; tags: string[] }
-export interface Meme { url: string; thumb: string }
+export interface Meme { url: string; thumb: string; title: string; postLink: string; subreddit: string; author: string; ups: number }
 
 export interface Commit {
   sha: string
@@ -40,7 +39,6 @@ export interface WorkbenchData {
   commits: Commit[]
 }
 
-/** Everything that can be open in an editor tab. */
 export type EditorInput =
   | { type: 'file'; path: string }
   | { type: 'preview'; path: string }

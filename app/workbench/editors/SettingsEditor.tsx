@@ -31,7 +31,6 @@ function SettingControl({ spec }: { spec: SettingSpec }) {
   return <NumberSetting value={value as number | null} onCommit={set} />
 }
 
-/** Keeps the typed text locally so partial input ("1" on the way to "14") isn't rejected; commits valid values. */
 function NumberSetting({ value, onCommit }: { value: number | null; onCommit(v: number | null): void }) {
   const [draft, setDraft] = useState(value === null ? '' : String(value))
   return (

@@ -8,12 +8,7 @@ export interface Command {
   id: string
   title: string
   category?: string
-  /**
-   * Mac-style binding, see keybinding.tsx. Chords are space separated. Browsers reserve some of
-   * VS Code's desktop keys (Cmd+W, Cmd+T, Cmd+1…9), so those commands get browser-safe keys or none.
-   */
   key?: string
-  /** Hide from the Command Palette (internal or keybinding-only). */
   hidden?: boolean
   when?: (wb: Workbench) => boolean
   run: (wb: Workbench) => void

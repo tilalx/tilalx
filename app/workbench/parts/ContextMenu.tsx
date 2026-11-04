@@ -13,7 +13,6 @@ export interface MenuRequest {
   x: number
   y: number
   items: MenuItem[]
-  /** Grow upward from y (menus opened from the bottom of the activity bar). */
   anchorBottom?: boolean
 }
 

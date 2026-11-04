@@ -1,11 +1,8 @@
 import seti from './vendor/seti.json'
 
 export interface Language {
-  /** VS Code language id (also the key Seti uses in `languageIds`). */
   id: string
-  /** Name shown in the status bar language picker. */
   label: string
-  /** Shiki grammar used for tokenizing, if any. */
   grammar?: string
 }
 
@@ -63,7 +60,6 @@ const SETI = seti as unknown as SetiAssociations & { iconDefinitions: Record<str
 
 export interface FileIconGlyph { char: string; color?: string }
 
-/** Resolves a file's Seti icon the way VS Code does: file name, then extensions (longest first), then language. */
 export function setiIcon(path: string, light = false): FileIconGlyph {
   const name    = basename(path).toLowerCase()
   const sets    = light ? [SETI.light, SETI] : [SETI]

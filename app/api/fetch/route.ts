@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
-import { lookup } from 'node:dns/promises'
-import { isIP } from 'node:net'
+import dns from 'node:dns'
+import http from 'node:http'
+import https from 'node:https'
+import { isIP, type LookupFunction } from 'node:net'
 
 const MAX_BYTES = 20_000
 const MAX_REDIRECTS = 3
@@ -8,7 +10,6 @@ const MAX_REDIRECTS = 3
 function isPrivateIp(ip: string): boolean {
   if (isIP(ip) === 6) {
     const v = ip.toLowerCase()
-    // IPv4-mapped, dotted (::ffff:127.0.0.1) or as URL normalizes it (::ffff:7f00:1)
     const mapped = /^::ffff:(\d+\.\d+\.\d+\.\d+)$/.exec(v)
     if (mapped) return isPrivateIp(mapped[1])
     const hex = /^::ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})$/.exec(v)
@@ -16,44 +17,63 @@ function isPrivateIp(ip: string): boolean {
       const hi = parseInt(hex[1], 16), lo = parseInt(hex[2], 16)
       return isPrivateIp(`${hi >> 8}.${hi & 255}.${lo >> 8}.${lo & 255}`)
     }
-    return !/^[23][0-9a-f]{0,3}:/.test(v) // only global unicast 2000::/3 is public
+    return !/^[23][0-9a-f]{0,3}:/.test(v) || v.startsWith('2002:') || /^2001:0{0,4}:/.test(v)
   }
-  const [a, b] = ip.split('.').map(Number)
+  const [a, b, c] = ip.split('.').map(Number)
   return a === 0 || a === 10 || a === 127 || a >= 224 ||
-    (a === 169 && b === 254) ||              // link-local incl. cloud metadata
+    (a === 169 && b === 254) ||
     (a === 172 && b >= 16 && b <= 31) ||
     (a === 192 && b === 168) ||
-    (a === 100 && b >= 64 && b <= 127)       // CGNAT
+    (a === 192 && b === 0 && c === 0) ||
+    (a === 198 && (b === 18 || b === 19)) ||
+    (a === 100 && b >= 64 && b <= 127)
 }
 
-// TODO: resolve-then-fetch leaves a DNS-rebinding window; pin the resolved IP
-// with a custom undici dispatcher if this endpoint ever matters more.
-async function isAllowedUrl(raw: string): Promise<boolean> {
+const safeLookup: LookupFunction = (host, opts, cb) => {
+  dns.lookup(host, { ...opts, all: true }, (err, addrs) => {
+    if (err) return cb(err, '', 0)
+    if (!addrs.length || addrs.some(x => isPrivateIp(x.address))) {
+      return cb(Object.assign(new Error('Private/loopback URLs are not allowed'), { code: 'EPRIVATE' }), '', 0)
+    }
+    if (opts.all) return cb(null, addrs)
+    cb(null, addrs[0].address, addrs[0].family)
+  })
+}
+
+function isAllowedUrl(raw: string): boolean {
   let url: URL
   try { url = new URL(raw) } catch { return false }
   if (url.protocol !== 'http:' && url.protocol !== 'https:') return false
   const host = url.hostname.replace(/^\[|\]$/g, '')
-  try {
-    const addrs = isIP(host) ? [{ address: host }] : await lookup(host, { all: true })
-    return addrs.length > 0 && !addrs.some(a => isPrivateIp(a.address)) // resolved, so DNS names for internal IPs fail too
-  } catch { return false }
+  return !isIP(host) || !isPrivateIp(host)
 }
 
-async function readCapped(res: Response): Promise<Uint8Array> {
-  const reader = res.body?.getReader()
-  if (!reader) return new Uint8Array()
-  const chunks: Uint8Array[] = []
-  let total = 0
-  while (total < MAX_BYTES) {
-    const { done, value } = await reader.read()
-    if (done) break
-    chunks.push(value); total += value.length
-  }
-  reader.cancel().catch(() => {})
-  const out = new Uint8Array(Math.min(total, MAX_BYTES))
-  let off = 0
-  for (const c of chunks) { const n = Math.min(c.length, out.length - off); out.set(c.subarray(0, n), off); off += n; if (off >= out.length) break }
-  return out
+interface Fetched { status: number; headers: http.IncomingHttpHeaders; body: Buffer }
+
+function get(url: string, signal: AbortSignal): Promise<Fetched> {
+  return new Promise((resolve, reject) => {
+    const lib = url.startsWith('https:') ? https : http
+    const req = lib.get(url, { headers: { 'User-Agent': 'TiloPortfolioBot/1.0' }, lookup: safeLookup, signal }, res => {
+      const status = res.statusCode ?? 0
+      if (status >= 300 && status < 400) {
+        res.resume()
+        return resolve({ status, headers: res.headers, body: Buffer.alloc(0) })
+      }
+      const chunks: Buffer[] = []
+      let total = 0
+      res.on('data', (chunk: Buffer) => {
+        chunks.push(chunk)
+        total += chunk.length
+        if (total >= MAX_BYTES) {
+          res.destroy()
+          resolve({ status, headers: res.headers, body: Buffer.concat(chunks).subarray(0, MAX_BYTES) })
+        }
+      })
+      res.on('end', () => resolve({ status, headers: res.headers, body: Buffer.concat(chunks) }))
+      res.on('error', reject)
+    })
+    req.on('error', reject)
+  })
 }
 
 export async function POST(request: Request) {
@@ -73,42 +93,40 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Only http/https URLs are allowed' }, { status: 400 })
   }
 
-  if (!(await isAllowedUrl(url))) {
+  if (!isAllowedUrl(url)) {
     return NextResponse.json({ error: 'Private/loopback URLs are not allowed' }, { status: 403 })
   }
 
+  const signal = AbortSignal.timeout(8000)
   try {
-    // Manual redirects so every hop is re-checked.
-    let res: Response
+    let res: Fetched
     for (let hop = 0; ; hop++) {
-      res = await fetch(url, {
-        headers: { 'User-Agent': 'TiloPortfolioBot/1.0' },
-        signal: AbortSignal.timeout(8000),
-        redirect: 'manual',
-      })
-      const loc: string | false | null = res.status >= 300 && res.status < 400 && res.headers.get('location')
+      res = await get(url, signal)
+      const loc = res.status >= 300 && res.status < 400 ? res.headers.location : undefined
       if (!loc) break
       if (hop >= MAX_REDIRECTS) return NextResponse.json({ error: 'Too many redirects' }, { status: 502 })
       url = new URL(loc, url).toString()
-      if (!(await isAllowedUrl(url))) {
+      if (!isAllowedUrl(url)) {
         return NextResponse.json({ error: 'Redirect to a private/loopback URL is not allowed' }, { status: 403 })
       }
     }
 
-    const contentType = res.headers.get('content-type') || 'text/plain'
-    const bytes = await readCapped(res)
-    const text = new TextDecoder('utf-8', { fatal: false }).decode(bytes)
+    const contentType = res.headers['content-type'] || 'text/plain'
+    const text = new TextDecoder('utf-8', { fatal: false }).decode(res.body)
 
     const cleanText = contentType.includes('text/html')
       ? text.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
            .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
            .replace(/<[^>]+>/g, ' ')
+           .replace(/<[^>]*$/, '')
            .replace(/\s{2,}/g, ' ')
            .trim()
       : text
 
     return NextResponse.json({ text: cleanText, status: res.status, contentType })
   } catch (e) {
-    return NextResponse.json({ error: (e as Error).message || 'Fetch failed' }, { status: 502 })
+    const err = e as NodeJS.ErrnoException
+    if (err.code === 'EPRIVATE') return NextResponse.json({ error: err.message }, { status: 403 })
+    return NextResponse.json({ error: err.name === 'AbortError' || err.name === 'TimeoutError' ? 'Request timed out' : err.message || 'Fetch failed' }, { status: 502 })
   }
 }

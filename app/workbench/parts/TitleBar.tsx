@@ -23,7 +23,6 @@ export default function TitleBar({ canGoBack, canGoForward, onBack, onForward }:
           <Codicon name="search" />
           <span>tilalx</span>
         </button>
-        {/* VS Code puts its chat button here; the spacer keeps the command center centered the same way. */}
         <span className="command-center-spacer" />
       </div>
       <div className="titlebar-right">

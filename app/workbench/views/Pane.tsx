@@ -11,7 +11,6 @@ export function Pane({ title, expanded, onToggle, actions = [], children, grow =
   onToggle(): void
   actions?: PaneAction[]
   children?: ReactNode
-  /** Expanded panes share the remaining height; non-growing ones size to content. */
   grow?: boolean
 }) {
   return (
@@ -22,7 +21,6 @@ export function Pane({ title, expanded, onToggle, actions = [], children, grow =
         tabIndex={0}
         aria-expanded={expanded}
         onClick={onToggle}
-        // Keys on the action buttons bubble up here; let those buttons handle their own Enter/Space.
         onKeyDown={e => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); onToggle() } }}
       >
         <Codicon name={expanded ? 'chevron-down' : 'chevron-right'} />

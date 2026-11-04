@@ -5,7 +5,6 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { useWorkbench } from '../context'
 
-/** Markdown preview, styled with VS Code's own preview stylesheet (see markdown-preview.css). */
 export default function MarkdownPreview({ path }: { path: string }) {
   const wb   = useWorkbench()
   const text = wb.fileText(path)

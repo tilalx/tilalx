@@ -18,7 +18,6 @@ function Toggle({ icon, title, on, set }: { icon: string; title: string; on: boo
   )
 }
 
-/** Shows the match with some leading context, like VS Code trims long preview lines. */
 function preview(m: Match) {
   const lead = Math.max(0, m.start - 26)
   const before = (lead > 0 ? '…' : '') + m.text.slice(lead, m.start).trimStart()

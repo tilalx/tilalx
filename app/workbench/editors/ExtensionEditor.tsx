@@ -4,7 +4,6 @@ import { useWorkbench } from '../context'
 import { Codicon } from '../icons'
 import { timeAgo } from '../format'
 
-/** The abbreviation each tool usually goes by; the first two letters ("Ty", "Ja") read wrong. */
 const SHORT_NAMES: Record<string, string> = {
   TypeScript: 'TS', JavaScript: 'JS', Python: 'Py', Java: 'Java', Go: 'Go', 'C++': 'C++', C: 'C', 'C#': 'C#',
   CSS: 'CSS', HTML: 'HTML', Shell: 'sh', Vue: 'Vue', Rust: 'Rs', Kotlin: 'Kt', Swift: 'Sw', Ruby: 'Rb', PHP: 'PHP',
@@ -14,7 +13,6 @@ const SHORT_NAMES: Record<string, string> = {
 
 export function ExtensionIcon({ name, color, size }: { name: string; color: string; size: number }) {
   const label = SHORT_NAMES[name] ?? name.replace(/[^A-Za-z0-9#+]/g, '').slice(0, 2)
-  // Longer labels get a smaller font so they still fit the tile.
   const scale = label.length <= 2 ? 0.38 : label.length === 3 ? 0.32 : 0.26
   return (
     <span className="extension-icon" style={{ width: size, height: size, background: color, fontSize: size * scale }}>
@@ -23,7 +21,6 @@ export function ExtensionIcon({ name, color, size }: { name: string; color: stri
   )
 }
 
-/** The extension detail page, for a language from my stack. */
 export default function ExtensionEditor({ name }: { name: string }) {
   const { data } = useWorkbench()
   const item  = data.stack.find(s => s.name === name)

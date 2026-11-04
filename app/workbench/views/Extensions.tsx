@@ -7,7 +7,6 @@ import { useWorkbench } from '../context'
 import { ExtensionIcon } from '../editors/ExtensionEditor'
 import { Pane, ViewTitle } from './Pane'
 
-/** Tools I use that GitHub's language stats can't see. */
 const TOOLS: { name: string; color: string; description: string }[] = [
   { name: 'Docker',     color: '#2496ed', description: 'Containers for everything, including this page.' },
   { name: 'Kubernetes', color: '#326ce5', description: 'When one container host stops being enough.' },

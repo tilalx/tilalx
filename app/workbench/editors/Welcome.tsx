@@ -7,11 +7,9 @@ import { timeAgo } from '../format'
 
 interface Walkthrough { id: string; icon: string; title: string; description: string; run(): void }
 
-/** VS Code's "Welcome" page, laid out the same way, filled with who I am instead of how to use the editor. */
 export default function Welcome() {
   const wb = useWorkbench()
   const repos = wb.data.repos.filter(r => !r.fork).slice(0, 6)
-  // The batch is random; prefer one short enough to sit beside the walkthroughs without dominating them.
   const quote = wb.data.quotes.find(q => q.content.length <= 160) ?? wb.data.quotes[0]
 
   const start = [
@@ -58,7 +56,6 @@ export default function Welcome() {
                   {repos.map(r => (
                     <li key={r.name}>
                       <a className="button-link" href={r.url} target="_blank" rel="noopener noreferrer">{r.name}</a>
-                      {/* Relative time can cross a unit boundary between server render and hydration. */}
                       <span className="path" title={r.description ?? ''} suppressHydrationWarning>~/github/{r.name} · {timeAgo(r.pushed_at)}</span>
                     </li>
                   ))}

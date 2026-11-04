@@ -29,15 +29,17 @@ Docker · Terraform · Ansible · Kubernetes · Next.js · React
 
 ## repositories
 
-See [github.com/tilalx](https://github.com/tilalx) for a full list.
+Recently pushed, see [github.com/tilalx](https://github.com/tilalx) for the full list.
 
+<!-- repos:start -->
 ```
 tilalx          personal page (this repo)
 quotes-rest     API to get random quotes
+trackyard       passive BLE badge tracking proof of concept
 meme-api        API serving the meme feed
 msbuild-plugin  Jenkins msbuild plugin
-openems         OpenEMS open source energy management
 ```
+<!-- repos:end -->
 
 ---
 

@@ -1,6 +1,5 @@
 import { readTreeFile } from '../../workbench/server'
 
-/** Contents of a file shown in the Explorer. Anything outside the tree is a 404. */
 export async function GET(request: Request) {
   const path = new URL(request.url).searchParams.get('path') ?? ''
   const text = readTreeFile(path)

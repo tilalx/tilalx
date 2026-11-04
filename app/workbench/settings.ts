@@ -48,7 +48,6 @@ export const SETTING_SPECS: SettingSpec[] = [
     description: 'Controls whether the minimap is shown.' },
 ]
 
-/** Parses the settings cookie, keeping only known keys with valid values. */
 export function parseSettings(raw: string | undefined): Settings {
   const out = { ...DEFAULT_SETTINGS }
   if (!raw) return out

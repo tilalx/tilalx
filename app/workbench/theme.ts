@@ -23,11 +23,6 @@ const FILES: Record<string, ThemeFile> = {
   './light_vs.json': lightVs, './light_plus.json': lightPlus, './light_modern.json': lightModern,
 }
 
-/**
- * Colors VS Code's color registry supplies when a theme doesn't set them, read from the
- * reference workbench (openvscode-server 1.105) with each theme active. The gitDecoration.*
- * values are VS Code's documented defaults: the workbench only emits them once a file is decorated.
- */
 const REGISTRY_DEFAULTS: Record<'dark' | 'light', Record<string, string>> = {
   dark: {
     'list.hoverBackground': '#2a2d2e', 'list.activeSelectionBackground': '#04395e', 'list.inactiveSelectionBackground': '#37373d',
@@ -74,7 +69,6 @@ const REGISTRY_DEFAULTS: Record<'dark' | 'light', Record<string, string>> = {
     'editorWidget.background': '#f8f8f8', 'editorWidget.border': '#c8c8c8', 'icon.foreground': '#3b3b3b',
     'welcomePage.tileHoverBackground': '#dfdfdf', 'button.secondaryHoverBackground': '#cccccc',
     'welcomePage.tileBorder': 'rgba(0, 0, 0, 0.1)', 'checkbox.foreground': '#3b3b3b',
-    // Light Modern leaves the menu to the registry, which derives it from the dropdown colors.
     'menu.background': '#ffffff', 'menu.foreground': '#3b3b3b',
   },
 }
@@ -87,7 +81,6 @@ function resolve(file: ThemeFile): Omit<ResolvedTheme, 'id' | 'label' | 'type'> 
   }
 }
 
-/** `rgba(…)` → `#rrggbbaa`. Monaco only parses hex colors (anything else turns red); CSS takes both. */
 function toHex(color: string): string {
   const m = /^rgba?\(\s*(\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\s*\)$/.exec(color)
   if (!m) return color.toLowerCase()
@@ -107,7 +100,6 @@ export const THEMES: Record<ThemeId, ResolvedTheme> = {
   'light-modern': build('light-modern', 'Light Modern', 'light', lightModern),
 }
 
-/** `editor.background` → `--vscode-editor-background`, the same variable names VS Code uses. */
 export function themeCssVars(theme: ResolvedTheme): Record<string, string> {
   return Object.fromEntries(Object.entries(theme.colors).map(([k, v]) => [`--vscode-${k.replace(/\./g, '-')}`, v]))
 }

@@ -5,7 +5,6 @@ import { Codicon } from '../icons'
 import { useWorkbench } from '../context'
 import { Pane, ViewTitle } from './Pane'
 
-/** The "Variables" a debugger would show if you paused on me. */
 const VARIABLES: [string, string, string?][] = [
   ['name', '"Tilo Alexander"', 'string'],
   ['role', '"Systems & DevOps Engineer"', 'string'],

@@ -14,7 +14,6 @@ import Timeline from './Timeline'
 
 interface Row { node: FileNode; depth: number }
 
-/** Live data views, contributed to the Explorer the way extensions add views there. */
 const FEEDS: { type: 'memes' | 'quotes' | 'contributions'; name: string; icon: string; description: string }[] = [
   { type: 'memes',         name: 'memes.feed',          icon: 'file-media', description: 'fresh memes' },
   { type: 'quotes',        name: 'quotes.log',          icon: 'quote',      description: 'random quotes' },
@@ -24,7 +23,6 @@ const FEEDS: { type: 'memes' | 'quotes' | 'contributions'; name: string; icon: s
 const GIT_TITLES: Record<GitStatus, string> = { M: 'Modified', U: 'Untracked', A: 'Index Added', D: 'Deleted' }
 const GIT_RANK: GitStatus[] = ['D', 'M', 'A', 'U']
 
-/** Git reports untracked directories as one entry; their files inherit it. */
 export function fileStatus(git: Record<string, GitStatus>, path: string): GitStatus | undefined {
   return git[path] ?? ancestors(path).map(a => git[a]).find(s => s === 'U')
 }
@@ -44,7 +42,6 @@ export default function Explorer() {
   const tab = activeTabOf(wb.editors)
   const activePath = tab && (tab.input.type === 'file' || tab.input.type === 'preview') ? tab.input.path : null
 
-  // explorer.autoReveal: follow the active editor.
   useEffect(() => {
     if (!activePath) return
     setExpanded(prev => {
@@ -66,7 +63,6 @@ export default function Explorer() {
     return out
   }, [wb.data.tree, expanded])
 
-  /** Folders take the strongest status of anything changed beneath them. */
   const folderStatus = useMemo(() => {
     const out: Record<string, GitStatus> = {}
     for (const [file, status] of Object.entries(wb.data.git)) {

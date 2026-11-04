@@ -2,7 +2,6 @@ import { languageOf } from './languages'
 
 export interface DocSymbol {
   name: string
-  /** Codicon name, e.g. symbol-function. */
   kind: string
   line: number
   endLine: number
@@ -15,7 +14,6 @@ const TS_KIND: Record<string, string> = {
   type: 'symbol-interface', enum: 'symbol-enum', const: 'symbol-constant', let: 'symbol-variable', var: 'symbol-variable',
 }
 
-/** A small, regex-based stand-in for a language server's document symbols. */
 export function parseSymbols(path: string, text: string): DocSymbol[] {
   const lang  = languageOf(path).id
   const lines = text.split('\n')
@@ -50,7 +48,6 @@ export function parseSymbols(path: string, text: string): DocSymbol[] {
     })
   }
 
-  // Each symbol ends where the next one at the same or a shallower depth starts.
   for (let i = 0; i < out.length; i++) {
     const next = out.slice(i + 1).find(s => s.depth <= out[i].depth)
     if (next) out[i].endLine = next.line - 1
@@ -58,7 +55,6 @@ export function parseSymbols(path: string, text: string): DocSymbol[] {
   return out
 }
 
-/** Innermost-first chain of symbols containing a line, used by breadcrumbs. */
 export function symbolPath(symbols: DocSymbol[], line: number): DocSymbol[] {
   const chain: DocSymbol[] = []
   for (const s of symbols) {

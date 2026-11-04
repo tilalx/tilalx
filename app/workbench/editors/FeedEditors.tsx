@@ -3,9 +3,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useWorkbench } from '../context'
 import { Codicon } from '../icons'
+import { MEME_SUBREDDITS } from '../paths'
 import type { Meme, Quote } from '../types'
 
-/** Custom editors for the live feeds. They render like VS Code's custom editor webviews: own toolbar, own scroll. */
 
 function FeedToolbar({ title, busy, onRefresh, children }: { title: string; busy: boolean; onRefresh(): void; children?: React.ReactNode }) {
   return (
@@ -29,48 +29,157 @@ function useFeed<T>(initial: T[], url: string, map: (json: unknown) => T[]) {
       const res = await fetch(url, { cache: 'no-store' })
       if (res.ok) { setItems(map(await res.json())); setFetchedAt(Date.now()) }
     } catch {
-      // Keep showing the previous items; the refresh button stays available.
     } finally { setBusy(false) }
   }, [url, map])
   return { items, busy, refresh, fetchedAt }
 }
 
-const mapMemes  = (j: unknown) => j as Meme[]
-
-/** `YYYY-MM-DD HH:MM:SS` in the visitor's time zone, like VS Code's output channels. */
 function logTime(ms: number): string {
   const d = new Date(ms), p = (n: number) => String(n).padStart(2, '0')
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`
 }
 
-const hideTile =(img: HTMLImageElement) => { (img.parentElement as HTMLElement).style.display = 'none' }
 const mapQuotes = (j: unknown) => j as Quote[]
+
+const MAX_MEMES = 1000
+
+function MemeTile({ meme, root, onOpen, onGone }: { meme: Meme; root: React.RefObject<HTMLDivElement | null>; onOpen(): void; onGone(): void }) {
+  const ref = useRef<HTMLButtonElement>(null)
+  const [near, setNear] = useState(false)
+  const [ar, setAr] = useState(1)
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const io = new IntersectionObserver(([e]) => setNear(e.isIntersecting), { root: root.current, rootMargin: '1200px 0px' })
+    io.observe(el)
+    return () => io.disconnect()
+  }, [root])
+  return (
+    <button ref={ref} className="meme" title={meme.title} onClick={onOpen} style={{ '--ar': ar } as React.CSSProperties}>
+      {near && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={meme.thumb}
+          alt={meme.title}
+          decoding="async"
+          onError={onGone}
+          onLoad={e => {
+            const i = e.currentTarget
+            if (i.naturalWidth === 130 && i.naturalHeight === 60) onGone()
+            else setAr(Math.min(2.5, Math.max(0.4, i.naturalWidth / i.naturalHeight)))
+          }}
+        />
+      )}
+    </button>
+  )
+}
+
+function MemeDialog({ memes, index, setIndex }: { memes: Meme[]; index: number | null; setIndex(i: number | null): void }) {
+  const ref = useRef<HTMLDialogElement>(null)
+  const meme = index === null ? null : memes[index]
+  useEffect(() => {
+    const d = ref.current
+    if (!d) return
+    if (meme && !d.open) d.showModal()
+    if (!meme && d.open) d.close()
+  }, [meme])
+  const step = (delta: number) => { if (index !== null) setIndex(Math.min(memes.length - 1, Math.max(0, index + delta))) }
+  return (
+    <dialog
+      ref={ref}
+      className="meme-dialog"
+      onClose={() => setIndex(null)}
+      onClick={e => { if (e.target === e.currentTarget) setIndex(null) }}
+      onKeyDown={e => { if (e.key === 'ArrowLeft') step(-1); if (e.key === 'ArrowRight') step(1) }}
+    >
+      {meme && (
+        <>
+          <div className="meme-dialog-header">
+            <span className="meme-dialog-title" title={meme.title}>{meme.title || basenameOf(meme.url)}</span>
+            <button className="action-label" title="Previous (Left Arrow)" disabled={index === 0} onClick={() => step(-1)}><Codicon name="arrow-left" /></button>
+            <button className="action-label" title="Next (Right Arrow)" disabled={index === memes.length - 1} onClick={() => step(1)}><Codicon name="arrow-right" /></button>
+            <a className="action-label" title="Open on Reddit" href={meme.postLink} target="_blank" rel="noopener noreferrer"><Codicon name="link-external" /></a>
+            <button className="action-label" title="Close (Escape)" onClick={() => setIndex(null)}><Codicon name="close" /></button>
+          </div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img className="meme-dialog-image" src={meme.url} alt={meme.title} />
+          <div className="meme-dialog-footer">
+            <span>r/{meme.subreddit}</span><span>u/{meme.author}</span><span><Codicon name="arrow-up" /> {meme.ups.toLocaleString()}</span>
+            <span className="meme-dialog-count">{index! + 1} / {memes.length}</span>
+          </div>
+        </>
+      )}
+    </dialog>
+  )
+}
+
+const basenameOf = (url: string) => url.split('/').pop() ?? url
 
 export function MemesEditor() {
   const { data } = useWorkbench()
-  const { items, busy, refresh } = useFeed(data.memes, '/api/feeds/memes', mapMemes)
-  useEffect(() => { if (!items.length) refresh() }, [items.length, refresh])
+  const [items, setItems] = useState(data.memes)
+  const [busy, setBusy] = useState(false)
+  const [done, setDone] = useState(false)
+  const [open, setOpen] = useState<number | null>(null)
+  const loading = useRef(false)
+  const misses = useRef(0)
+  const batch = useRef(0)
+  const seen = useRef(new Set(data.memes.map(m => m.url)))
+  const body = useRef<HTMLDivElement>(null)
+  const sentinel = useRef<HTMLDivElement>(null)
+
+  const load = useCallback(async (reset: boolean) => {
+    if (loading.current) return
+    loading.current = true
+    setBusy(true)
+    try {
+      if (reset) batch.current = 0
+      const sub = MEME_SUBREDDITS[batch.current++ % MEME_SUBREDDITS.length]
+      const res = await fetch(`/api/feeds/memes?sub=${sub}`, { cache: 'no-store' })
+      const next: Meme[] = res.ok ? await res.json() : []
+      if (reset) seen.current.clear()
+      const fresh = next.filter(m => !seen.current.has(m.url))
+      fresh.forEach(m => seen.current.add(m.url))
+      misses.current = fresh.length ? 0 : misses.current + 1
+      setItems(prev => (reset ? fresh : [...prev, ...fresh]).slice(0, MAX_MEMES))
+    } catch {
+      misses.current++
+    } finally {
+      loading.current = false
+      setBusy(false)
+    }
+  }, [])
+
+  useEffect(() => { setDone(misses.current >= 2 * MEME_SUBREDDITS.length || items.length >= MAX_MEMES) }, [items])
+
+  useEffect(() => {
+    const el = sentinel.current
+    if (!el || done || busy) return
+    const io = new IntersectionObserver(([e]) => { if (e.isIntersecting) load(false) }, { root: body.current, rootMargin: '800px 0px' })
+    io.observe(el)
+    return () => io.disconnect()
+  }, [load, done, busy, items.length])
+
+  const reload = () => {
+    body.current?.scrollTo({ top: 0 })
+    misses.current = 0
+    setOpen(null)
+    load(true)
+  }
+  const drop = (url: string) => setItems(prev => prev.filter(m => m.url !== url))
+
   return (
     <div className="feed-editor">
-      <FeedToolbar title={`memes.feed — ${items.length} items`} busy={busy} onRefresh={refresh} />
-      <div className="feed-body scrollable">
-        <div className="meme-grid">
-          {items.map(m => (
-            <a key={m.url} href={m.url} target="_blank" rel="noopener noreferrer" className="meme">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={m.thumb}
-                alt=""
-                loading="lazy"
-                // Memes get deleted upstream; drop the tile instead of showing a broken image.
-                onError={e => hideTile(e.currentTarget)}
-                // A deleted i.redd.it image still decodes: Reddit serves a 130×60 "probably deleted" PNG with its 404.
-                onLoad={e => { const i = e.currentTarget; if (i.naturalWidth === 130 && i.naturalHeight === 60) hideTile(i) }}
-              />
-            </a>
-          ))}
+      <FeedToolbar title={`memes.feed — ${items.length} items`} busy={busy} onRefresh={reload} />
+      <div className="feed-body scrollable" ref={body}>
+        <div className="meme-feed">
+          {items.map((m, i) => <MemeTile key={m.url} meme={m} root={body} onOpen={() => setOpen(i)} onGone={() => drop(m.url)} />)}
+          <div ref={sentinel} className="meme-more">
+            {done ? (items.length ? 'You reached the end of the feed.' : 'No memes could be loaded.') : <Codicon name="loading" className="codicon-modifier-spin" style={{ visibility: busy ? 'visible' : 'hidden' }} />}
+          </div>
         </div>
       </div>
+      <MemeDialog memes={items} index={open} setIndex={setOpen} />
     </div>
   )
 }
@@ -85,7 +194,6 @@ export function QuotesEditor() {
       <div className="feed-body scrollable log">
         {items.map((q, i) => (
           <div key={i} className="log-line">
-            {/* Log-style timestamps, one per quote, counting back from when the batch was fetched. */}
             <span className="log-time">{logTime(fetchedAt - i * 61_000)}</span>
             <span className="log-level">[info]</span>
             <span className="log-msg">
@@ -109,7 +217,6 @@ export function ContributionsEditor() {
   const [days, setDays] = useState<ContributionDay[] | null>(null)
   const [busy, setBusy] = useState(false)
 
-  // Switching years quickly must not let an older, slower response overwrite the newer one.
   const latest = useRef(0)
   const load = useCallback(async (y: number) => {
     const req = ++latest.current
@@ -139,11 +246,10 @@ export function ContributionsEditor() {
         </select>
       </FeedToolbar>
       <div className="feed-body scrollable">
-        <div className="contrib">
+        <div className="contrib" style={{ '--weeks': weeks.length } as React.CSSProperties}>
           <div className="contrib-total">{days ? `${total} contributions in ${year}` : 'Loading…'}</div>
           <div className="contrib-months" aria-hidden="true">
             {weeks.map((w, i) => {
-              // Like GitHub: a month's label sits on the week that contains its 1st.
               const first = w.find(d => d?.date.endsWith('-01'))
               return <span key={i}>{first ? MONTHS[Number(first.date.slice(5, 7)) - 1] : ''}</span>
             })}

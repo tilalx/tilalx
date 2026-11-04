@@ -32,7 +32,6 @@ import Sash from './parts/Sash'
 const SIDEBAR_DEFAULT = 300
 const PANEL_DEFAULT   = 300
 
-/** Phones get a deliberately different layout (see the narrow media query in workbench.css). */
 const NARROW_QUERY = '(max-width: 700px)'
 const isNarrow = () => typeof window !== 'undefined' && window.matchMedia(NARROW_QUERY).matches
 
@@ -72,7 +71,6 @@ export default function Workbench({ data, initialSettings }: { data: WorkbenchDa
     })
   }, [])
 
-  // Theme variables live on <html> so the server-rendered colours match before hydration.
   useEffect(() => {
     const root = document.documentElement
     for (const [k, v] of Object.entries(themeCssVars(theme))) root.style.setProperty(k, v)
@@ -100,7 +98,6 @@ export default function Workbench({ data, initialSettings }: { data: WorkbenchDa
         setSaved(f => path in f ? f : { ...f, [path]: text })
       })
       .catch(() => {
-        // Editors show an error with Retry; they don't call loadFile again on their own, so this notifies once.
         setFailed(f => new Set([...f, path]))
         notify(`Unable to open '${path.split('/').pop()}': the file could not be read.`, 'error')
       })
@@ -117,7 +114,6 @@ export default function Workbench({ data, initialSettings }: { data: WorkbenchDa
     else focusEditor()
   }, [focusEditor])
 
-  // On a phone, start with just the editor.
   const [hydrated, setHydrated] = useState(false)
   useEffect(() => {
     if (isNarrow()) setSidebar(s => ({ ...s, visible: false }))
@@ -170,7 +166,6 @@ export default function Workbench({ data, initialSettings }: { data: WorkbenchDa
   const wbRef = useRef(wb)
   wbRef.current = wb
 
-  // Zen hides every clickable way out, so Escape leaves it (unless a menu or picker is open to take the key).
   useEffect(() => {
     if (!zen) return
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && !quick && !menu) setZen(false) }
@@ -178,7 +173,6 @@ export default function Workbench({ data, initialSettings }: { data: WorkbenchDa
     return () => window.removeEventListener('keydown', onKey)
   }, [zen, quick, menu])
 
-  // Edits only live in this tab; warn before they're lost to a reload or a closed tab.
   const dirty = Object.keys(files).some(p => files[p] !== saved[p])
   useEffect(() => {
     if (!dirty) return
@@ -187,7 +181,6 @@ export default function Workbench({ data, initialSettings }: { data: WorkbenchDa
     return () => window.removeEventListener('beforeunload', warn)
   }, [dirty])
 
-  // Editor navigation history (title bar back/forward).
   const activeId = activeTabOf(editors)?.id ?? null
   useEffect(() => {
     const h = history.current
@@ -209,7 +202,6 @@ export default function Workbench({ data, initialSettings }: { data: WorkbenchDa
     }
   }
 
-  // Title bar back/forward, bound like VS Code (Ctrl+- / Ctrl+Shift+- on mac, Alt+Left / Alt+Right elsewhere).
   const navigateRef = useRef(navigate)
   navigateRef.current = navigate
   useEffect(() => {
@@ -221,10 +213,8 @@ export default function Workbench({ data, initialSettings }: { data: WorkbenchDa
     return () => window.removeEventListener('keydown', onKey)
   }, [mac])
 
-  // Global keybindings, with two-stroke chords (Cmd+K …).
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      // Releasing Cmd between the two strokes of a chord sends a lone modifier keydown; it must not cancel the chord.
       if (e.repeat || ['Meta', 'Control', 'Shift', 'Alt'].includes(e.key)) return
       const pending = chord.current && Date.now() - chord.current.at < 2000 ? chord.current.first : null
       chord.current = null
@@ -340,7 +330,6 @@ export default function Workbench({ data, initialSettings }: { data: WorkbenchDa
           )}
           <div className="wb-main">
             {!(panelVisible && panel.maximized) && <EditorPart onTabMenu={onTabMenu} />}
-            {/* Once opened, the panel stays mounted while hidden so the terminal keeps its session. */}
             {panelOpened && (
               <div className="panel-container" style={!panelVisible ? { display: 'none' } : panel.maximized ? { flex: 1 } : { height: panel.height }}>
                 {!panel.maximized && (
@@ -367,7 +356,6 @@ export default function Workbench({ data, initialSettings }: { data: WorkbenchDa
           </button>
         )}
         {!zen && <StatusBar onBell={() => notify(notes.length ? `${notes.length} notifications` : 'No new notifications')} />}
-        {/* Keyed so switching modes (palette → theme picker) starts fresh instead of keeping the typed text. */}
         {quick && <QuickInput key={`${quick.mode}:${quick.value}`} mode={quick.mode} initialValue={quick.value} onClose={() => setQuick(null)} />}
         {menu && <ContextMenu {...menu} onClose={() => setMenu(null)} />}
         <Notifications items={notes} onDismiss={id => setNotes(n => n.filter(x => x.id !== id))} />

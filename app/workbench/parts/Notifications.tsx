@@ -4,7 +4,6 @@ import { Codicon } from '../icons'
 
 export interface Notification { id: number; message: string; severity: 'info' | 'warning' | 'error' }
 
-/** Notification toasts, bottom right above the status bar. */
 export default function Notifications({ items, onDismiss }: { items: Notification[]; onDismiss(id: number): void }) {
   if (!items.length) return null
   return (

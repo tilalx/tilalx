@@ -96,7 +96,6 @@ function Breadcrumbs({ input }: { input: EditorInput }) {
 
 const BINARY = /\.(woff2?|ttf|otf|png|jpe?g|gif|ico|webp|zip|gz)$/i
 
-/** VS Code's placeholder for files the text editor won't show. */
 function BinaryEditor({ path }: { path: string }) {
   return (
     <div className="binary-editor">
@@ -106,7 +105,6 @@ function BinaryEditor({ path }: { path: string }) {
   )
 }
 
-/** VS Code's message when an editor's input can't be resolved, with a way to try again. */
 function LoadError({ path }: { path: string }) {
   const wb = useWorkbench()
   return (
@@ -251,7 +249,6 @@ function EditorGroup({ group, isActive, onTabMenu, drag, setDrag }: {
       )}
       {activeTab && <Breadcrumbs input={activeTab.input} />}
       <div className="editor-container">
-        {/* Inactive tabs stay mounted (hidden) so Monaco keeps scroll position and undo stack, as in VS Code. */}
         {group.tabs.map(tab => (
           <div key={tab.id} className="editor-instance" style={{ display: tab.id === group.active ? 'block' : 'none' }}>
             <EditorContent

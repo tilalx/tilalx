@@ -1,21 +1,15 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
-# dependencies
 /node_modules
 /.pnp
 .pnp.js
 .yarn/*
 
-# testing
 /coverage
 
-# production
 /build
 /dist
 /.next
 next-env.d.ts
 
-# misc
 .DS_Store
 .env.local
 .env.development.local
@@ -26,10 +20,7 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-
-# typescript
 *.tsbuildinfo
 
-# local agent config
 .claude/
 .playwright-mcp/

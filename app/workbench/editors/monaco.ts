@@ -6,7 +6,6 @@ import { GRAMMARS } from '../languages'
 
 export type Monaco = typeof import('./monaco-slim')
 
-// Spelled out so the bundler can split each grammar into its own chunk.
 const GRAMMAR_LOADERS: Record<string, () => Promise<{ default: LanguageRegistration[] }>> = {
   typescript:  () => import('@shikijs/langs/typescript'),
   tsx:         () => import('@shikijs/langs/tsx'),
@@ -25,10 +24,6 @@ const GRAMMAR_LOADERS: Record<string, () => Promise<{ default: LanguageRegistrat
 
 let loading: Promise<Monaco> | null = null
 
-/**
- * Loads Monaco once, wires Shiki in as the tokenizer (VS Code's TextMate grammars) and registers
- * VS Code's own theme files, so highlighting matches the real editor.
- */
 export function loadMonaco(): Promise<Monaco> {
   loading ??= (async () => {
     self.MonacoEnvironment = {
@@ -48,11 +43,10 @@ export function loadMonaco(): Promise<Monaco> {
     for (const id of highlighter.getLoadedLanguages()) monaco.languages.register({ id })
     shikiToMonaco(highlighter, monaco)
     return monaco
-  })()
+  })().catch(e => { loading = null; throw e })
   return loading
 }
 
-/** VS Code's platform defaults for editor.fontFamily / fontSize / lineHeight. */
 export function editorFont(): { fontFamily: string; fontSize: number; lineHeight: number } {
   const p = navigator.platform || navigator.userAgent
   if (/Mac|iPhone|iPad/.test(p)) return { fontFamily: "Menlo, Monaco, 'Courier New', monospace", fontSize: 12, lineHeight: 18 }

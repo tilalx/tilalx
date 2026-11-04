@@ -1,6 +1,4 @@
-/* Adapted from VS Code's markdown-language-features/media/markdown.css (MIT, © Microsoft),
-   scoped to .markdown-body instead of the preview webview's html/body, plus the webview's default
-   element styles (links, inline code, blockquotes). */
+/* Adapted from VS Code's markdown-language-features/media/markdown.css (MIT, © Microsoft). */
 
 .markdown-preview {
   position: absolute; inset: 0; overflow: auto;

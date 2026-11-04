@@ -1,4 +1,3 @@
-/** VS Code's relative time style: "5 mins", "3 hrs", "2 days", "4 wks", "2 mos", "1 yr". */
 export function timeAgo(date: string | number | Date): string {
   const s = Math.max(0, (Date.now() - new Date(date).getTime()) / 1000)
   const units: [number, string, string][] = [

@@ -8,7 +8,6 @@ import { editorFont } from '../editors/monaco'
 import { complete, prompt, run } from './shell'
 import type { ShellEnv, ShellState } from './shell'
 
-/** VS Code's terminal color registry defaults (terminalColorRegistry.ts). */
 const ANSI = {
   dark: {
     black: '#000000', red: '#cd3131', green: '#0dbc79', yellow: '#e5e510', blue: '#2472c8', magenta: '#bc3fbc', cyan: '#11a8cd', white: '#e5e5e5',
@@ -92,21 +91,29 @@ export default function Terminal({ visible }: { visible: boolean }) {
       let histIdx = 0
       let busy = false
 
+      const promptWidth = () => prompt(state).replace(/\x1b\[[0-9;]*m/g, '').length
+      let shownRow = 0
       const redraw = () => {
-        t.write(`\r\x1b[2K${prompt(state)}${line}`)
-        const back = line.length - cursor
-        if (back > 0) t.write(`\x1b[${back}D`)
+        const cols = t.cols, p = promptWidth()
+        let out = '\r' + (shownRow > 0 ? `\x1b[${shownRow}A` : '') + '\x1b[J' + prompt(state) + line
+        if ((p + line.length) % cols === 0 && line.length) out += ' \r'
+        const endRow = Math.floor((p + line.length) / cols)
+        const row = Math.floor((p + cursor) / cols), col = (p + cursor) % cols
+        out += '\r' + (endRow > row ? `\x1b[${endRow - row}A` : '') + (col ? `\x1b[${col}C` : '')
+        t.write(out)
+        shownRow = row
       }
+      const toEnd = () => { cursor = line.length; redraw() }
 
       t.writeln(`\x1b[2mtilalx terminal. Type \x1b[0m\x1b[36mhelp\x1b[0m\x1b[2m to see what works.\x1b[0m`)
       t.write(prompt(state))
-      // xterm loads asynchronously, after the panel already asked for focus.
       if (visibleRef.current) t.focus()
 
       const submit = async () => {
         const cmd = line.trim()
+        toEnd()
         t.write('\r\n')
-        line = ''; cursor = 0
+        line = ''; cursor = 0; shownRow = 0
         if (cmd) {
           history.push(cmd)
           histIdx = history.length
@@ -137,22 +144,22 @@ export default function Terminal({ visible }: { visible: boolean }) {
           case '\x1b[B':
             if (histIdx < history.length) { histIdx++; line = history[histIdx] ?? ''; cursor = line.length; redraw() }
             return
-          case '\x1b[D': if (cursor > 0) { cursor--; t.write(data) } return
-          case '\x1b[C': if (cursor < line.length) { cursor++; t.write(data) } return
+          case '\x1b[D': if (cursor > 0) { cursor--; redraw() } return
+          case '\x1b[C': if (cursor < line.length) { cursor++; redraw() } return
           case '\x1b[H': case '\x01': cursor = 0; redraw(); return
           case '\x1b[F': case '\x05': cursor = line.length; redraw(); return
-          case '\x03': t.write('^C\r\n'); line = ''; cursor = 0; t.write(prompt(state)); return
+          case '\x03': toEnd(); t.write('^C\r\n'); line = ''; cursor = 0; shownRow = 0; t.write(prompt(state)); return
           case '\x0c': t.clear(); redraw(); return
           case '\x15': line = line.slice(cursor); cursor = 0; redraw(); return
           case '\t': {
             const before = line.slice(0, cursor)
-            const options = complete(before, state, env())
+            const { word, options } = complete(before, state, env())
             if (options.length === 1) {
-              const word = before.match(/\S*$/)?.[0] ?? ''
               const add = options[0].slice(word.length) + (options[0].endsWith('/') ? '' : ' ')
               line = before + add + line.slice(cursor); cursor += add.length; redraw()
             } else if (options.length > 1) {
-              t.write('\r\n' + options.join('  ') + '\r\n'); redraw()
+              const at = cursor
+              toEnd(); t.write('\r\n' + options.join('  ') + '\r\n'); shownRow = 0; cursor = at; redraw()
             }
             return
           }

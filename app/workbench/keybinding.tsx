@@ -4,10 +4,6 @@ import { useIsMac } from './context'
 
 const MAC_SYMBOLS: Record<string, string> = { Cmd: '⌘', Ctrl: '⌃', Shift: '⇧', Alt: '⌥', Enter: '↩', Up: '↑', Down: '↓', Left: '←', Right: '→', Backspace: '⌫', Escape: 'Esc' }
 
-/**
- * Keybindings are written mac-style ("Cmd+Shift+P"); on other platforms Cmd becomes Ctrl.
- * A chord is two strokes separated by a space ("Cmd+K Cmd+T").
- */
 export function keyParts(binding: string, mac: boolean): string[][] {
   return binding.split(' ').map(stroke => stroke.split('+').map(k => {
     if (!mac && k === 'Cmd') return 'Ctrl'
@@ -34,7 +30,6 @@ export function Keybinding({ binding }: { binding: string }) {
 
 const ARROWS: Record<string, string> = { Left: 'ArrowLeft', Right: 'ArrowRight', Up: 'ArrowUp', Down: 'ArrowDown' }
 
-/** Does a keyboard event match a mac-style binding (single stroke)? Off-mac, Cmd and Ctrl are both the Ctrl key. */
 export function matchesKey(e: KeyboardEvent, binding: string, mac: boolean): boolean {
   const parts = binding.split('+')
   const key   = parts.pop()!
