@@ -16,6 +16,7 @@ export default function MarkdownPreview({ path }: { path: string }) {
         {text !== undefined && (
           <ReactMarkdown
             remarkPlugins={[remarkGfm]}
+            skipHtml
             components={{ a: ({ href, children }) => <a href={href} target="_blank" rel="noopener noreferrer">{children}</a> }}
           >
             {text}
