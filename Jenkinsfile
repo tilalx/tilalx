@@ -20,7 +20,6 @@ pipeline {
 
     stage('Checkout Code') {
       steps {
-        // For Multibranch / PR builds, Jenkins already checks out the right ref in `scm`.
         checkout scm
       }
     }
@@ -30,10 +29,8 @@ pipeline {
         script {
           sh 'docker run --rm --privileged tonistiigi/binfmt --install all'
 
-          // Make builder name stable+unique for this run (safe for PRs and concurrency)
-          env.BUILDER_NAME = "builder-${env.JOB_NAME.replaceAll('/', '-')}-${env.BUILD_NUMBER}"
+          env.BUILDER_NAME = "builder-${env.JOB_NAME.replaceAll('[^A-Za-z0-9_.-]', '-')}-${env.BUILD_NUMBER}"
 
-          // Ensure any previous builder with same name is removed (best-effort)
           sh "docker buildx rm ${env.BUILDER_NAME} || true"
           sh "docker buildx create --name ${env.BUILDER_NAME} --use"
           sh "docker buildx inspect --bootstrap"
@@ -44,7 +41,6 @@ pipeline {
     stage('Build Docker Image') {
       steps {
         script {
-          // Jenkins PR builds often have CHANGE_ID / CHANGE_BRANCH
           def isPR = env.CHANGE_ID?.trim()
           def branchName = env.BRANCH_NAME ?: (isPR ? env.CHANGE_BRANCH : "unknown")
 
@@ -54,14 +50,11 @@ pipeline {
           } else if (isPR) {
             tagName = "pr-${env.CHANGE_ID}"
           } else {
-            // sanitize for docker tags
             tagName = branchName.replaceAll('[^0-9A-Za-z_.-]', '-')
           }
 
           env.IMAGE_TAG = "${env.IMAGE_NAME}:${tagName}"
 
-          // For PRs: build (and optionally load) without pushing.
-          // For main: build + push.
           if (branchName == "main") {
             withCredentials([usernamePassword(
               credentialsId: 'dockerhub',
@@ -75,7 +68,6 @@ pipeline {
               """
             }
           } else {
-            // PR/branch build: no push
             sh """
               docker buildx build --platform linux/amd64 \
                 -t ${env.IMAGE_TAG} --load .
