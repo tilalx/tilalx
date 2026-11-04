@@ -19,7 +19,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "test": "node --experimental-strip-types --no-warnings app/workbench/terminal/shell.check.ts"
   },
   "browserslist": {
     "production": [
