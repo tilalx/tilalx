@@ -74,6 +74,15 @@ function git(args: string): string {
   catch { return '' }
 }
 
+let cachedGit: { status: Record<string, GitStatus>; branch: string } | null = null
+
+// Git state only changes in dev; in production it is fixed for the life of the process.
+function gitInfo(): { status: Record<string, GitStatus>; branch: string } {
+  if (cachedGit && process.env.NODE_ENV === 'production') return cachedGit
+  cachedGit = { status: gitStatus(), branch: git('rev-parse --abbrev-ref HEAD') || 'main' }
+  return cachedGit
+}
+
 function gitStatus(): Record<string, GitStatus> {
   const out: Record<string, GitStatus> = {}
   for (const line of git('status --porcelain -uall').split('\n').filter(Boolean)) {
@@ -85,6 +94,20 @@ function gitStatus(): Record<string, GitStatus> {
 }
 
 const UPSTREAM_TIMEOUT = 3000
+const POOL_SIZE        = 50
+const POOL_REVALIDATE  = 60
+// Unauthenticated GitHub API allows 60 requests/hour per IP.
+const GITHUB_REVALIDATE = 3600
+
+// Upstreams are fetched as a cached pool; each request gets its own random pick from it.
+function sample<T>(pool: T[], count: number): T[] {
+  const a = [...pool]
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]]
+  }
+  return a.slice(0, count)
+}
 
 interface QuoteApiItem { content: string; author: string; tags: string }
 interface MemeApiItem  { url?: string; preview?: string[]; title?: string; postLink?: string; subreddit?: string; author?: string; ups?: number }
@@ -119,9 +142,9 @@ export function pickMemeUrl(preview: string[] | null | undefined, fallback: stri
 
 export async function fetchQuotes(count = 10): Promise<Quote[]> {
   try {
-    const res = await fetch(`https://quotes.aelx.de/random?count=${count}`, { cache: 'no-store', signal: AbortSignal.timeout(UPSTREAM_TIMEOUT) })
+    const res = await fetch(`https://quotes.aelx.de/random?count=${POOL_SIZE}`, { next: { revalidate: POOL_REVALIDATE }, signal: AbortSignal.timeout(UPSTREAM_TIMEOUT) })
     if (!res.ok) return []
-    return ((await res.json() || []) as QuoteApiItem[]).map(q => ({
+    return sample((await res.json() || []) as QuoteApiItem[], count).map(q => ({
       content: cleanQuote(q.content), author: q.author, tags: parseTags(q.tags),
     }))
   } catch { return [] }
@@ -129,12 +152,12 @@ export async function fetchQuotes(count = 10): Promise<Quote[]> {
 
 export async function fetchMemes(count = 30, subreddit?: string): Promise<Meme[]> {
   try {
-    const res = await fetch(`https://meme-api.aelx.de/gimme/${subreddit ? `${subreddit}/` : ''}${count}?nsfw=false&spoiler=false`, { cache: 'no-store', signal: AbortSignal.timeout(UPSTREAM_TIMEOUT) })
+    const res = await fetch(`https://meme-api.aelx.de/gimme/${subreddit ? `${subreddit}/` : ''}${POOL_SIZE}?nsfw=false&spoiler=false`, { next: { revalidate: POOL_REVALIDATE }, signal: AbortSignal.timeout(UPSTREAM_TIMEOUT) })
     if (!res.ok) return []
     const data = await res.json()
-    return ((data.memes || []) as MemeApiItem[])
+    return sample(((data.memes || []) as MemeApiItem[])
       .filter((m): m is MemeApiItem & { url: string } => !!m.url)
-      .filter((m, i, all) => all.findIndex(x => x.url === m.url) === i)
+      .filter((m, i, all) => all.findIndex(x => x.url === m.url) === i), count)
       .map(m => ({
         url: m.url, thumb: pickMemeUrl(m.preview, m.url), title: m.title ?? '', postLink: m.postLink ?? m.url,
         subreddit: m.subreddit ?? '', author: m.author ?? '', ups: m.ups ?? 0,
@@ -144,7 +167,7 @@ export async function fetchMemes(count = 30, subreddit?: string): Promise<Meme[]
 
 async function fetchRepos(): Promise<{ repos: Repo[]; stack: StackItem[] }> {
   try {
-    const res = await fetch('https://api.github.com/users/tilalx/repos?sort=pushed&per_page=100', { next: { revalidate: 60 }, signal: AbortSignal.timeout(UPSTREAM_TIMEOUT) })
+    const res = await fetch('https://api.github.com/users/tilalx/repos?sort=pushed&per_page=100', { next: { revalidate: GITHUB_REVALIDATE }, signal: AbortSignal.timeout(UPSTREAM_TIMEOUT) })
     if (!res.ok) return { repos: [], stack: [] }
     const repos: Repo[] = (await res.json() as GhRepo[]).map(r => ({
       name: r.name, description: r.description, language: r.language,
@@ -158,7 +181,7 @@ async function fetchRepos(): Promise<{ repos: Repo[]; stack: StackItem[] }> {
 
 async function fetchCommits(): Promise<Commit[]> {
   try {
-    const res = await fetch('https://api.github.com/repos/tilalx/tilalx/commits?per_page=15', { next: { revalidate: 60 }, signal: AbortSignal.timeout(UPSTREAM_TIMEOUT) })
+    const res = await fetch('https://api.github.com/repos/tilalx/tilalx/commits?per_page=15', { next: { revalidate: GITHUB_REVALIDATE }, signal: AbortSignal.timeout(UPSTREAM_TIMEOUT) })
     if (!res.ok) return []
     const data = await res.json()
     return Array.isArray(data) ? data : []
@@ -182,11 +205,12 @@ export function withLiveRepos(readme: string, repos: Repo[], count = 8): string 
 export async function loadWorkbenchData(): Promise<WorkbenchData> {
   const [quotes, memes, { repos, stack }, commits] = await Promise.all([fetchQuotes(), fetchMemes(), fetchRepos(), fetchCommits()])
   const readme = readTreeFile(README_PATH)
+  const { status, branch } = gitInfo()
   return {
     tree:   buildFileTree(),
     files:  readme === null ? {} : { [README_PATH]: withLiveRepos(readme, repos) },
-    git:    gitStatus(),
-    branch: git('rev-parse --abbrev-ref HEAD') || 'main',
+    git:    status,
+    branch,
     repos, stack, quotes, memes, commits,
   }
 }
