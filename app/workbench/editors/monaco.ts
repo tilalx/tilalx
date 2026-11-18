@@ -7,19 +7,19 @@ import { GRAMMARS } from '../languages'
 export type Monaco = typeof import('./monaco-slim')
 
 const GRAMMAR_LOADERS: Record<string, () => Promise<{ default: LanguageRegistration[] }>> = {
-  typescript:  () => import('@shikijs/langs/typescript'),
-  tsx:         () => import('@shikijs/langs/tsx'),
-  javascript:  () => import('@shikijs/langs/javascript'),
-  jsx:         () => import('@shikijs/langs/jsx'),
-  json:        () => import('@shikijs/langs/json'),
-  jsonc:       () => import('@shikijs/langs/jsonc'),
-  markdown:    () => import('@shikijs/langs/markdown'),
-  css:         () => import('@shikijs/langs/css'),
-  dockerfile:  () => import('@shikijs/langs/dockerfile'),
-  yaml:        () => import('@shikijs/langs/yaml'),
-  groovy:      () => import('@shikijs/langs/groovy'),
-  xml:         () => import('@shikijs/langs/xml'),
-  shellscript: () => import('@shikijs/langs/shellscript'),
+  typescript:  () => import('shiki/langs/typescript.mjs'),
+  tsx:         () => import('shiki/langs/tsx.mjs'),
+  javascript:  () => import('shiki/langs/javascript.mjs'),
+  jsx:         () => import('shiki/langs/jsx.mjs'),
+  json:        () => import('shiki/langs/json.mjs'),
+  jsonc:       () => import('shiki/langs/jsonc.mjs'),
+  markdown:    () => import('shiki/langs/markdown.mjs'),
+  css:         () => import('shiki/langs/css.mjs'),
+  dockerfile:  () => import('shiki/langs/dockerfile.mjs'),
+  yaml:        () => import('shiki/langs/yaml.mjs'),
+  groovy:      () => import('shiki/langs/groovy.mjs'),
+  xml:         () => import('shiki/langs/xml.mjs'),
+  shellscript: () => import('shiki/langs/shellscript.mjs'),
 }
 
 let loading: Promise<Monaco> | null = null

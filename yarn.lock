@@ -365,7 +365,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@shikijs/monaco@npm:^4.6.0":
+"@shikijs/monaco@npm:4.6.0":
   version: 4.6.0
   resolution: "@shikijs/monaco@npm:4.6.0"
   dependencies:
@@ -481,7 +481,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:^26.6.6":
+"@types/node@npm:26.6.6":
   version: 26.6.6
   resolution: "@types/node@npm:26.6.6"
   dependencies:
@@ -490,16 +490,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/react-dom@npm:^19.3.0":
-  version: 19.3.0
-  resolution: "@types/react-dom@npm:19.3.0"
-  peerDependencies:
-    "@types/react": ^19.3.0
-  checksum: 10c0/ce0066d28b62bc6afdd17ca84756b8fbe0f6ffc0c8b1e60739abc30e81510da2edbc1007e6ab3d974d30f5a8c25bb0f7de8d7ce09736c909fe84c0f9aed0b946
-  languageName: node
-  linkType: hard
-
-"@types/react@npm:^19.3.0":
+"@types/react@npm:19.3.0":
   version: 19.3.0
   resolution: "@types/react@npm:19.3.0"
   dependencies:
@@ -536,21 +527,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@xterm/addon-fit@npm:^0.11.0":
+"@xterm/addon-fit@npm:0.11.0":
   version: 0.11.0
   resolution: "@xterm/addon-fit@npm:0.11.0"
   checksum: 10c0/c0ce94f7e877d07e7197d15d041cc629ce2e853016400aadddc9810838ea8a26e836f87f325eba36df88c03feb72d9f13cd8c3bb41ee31e701f1058edb8553c3
   languageName: node
   linkType: hard
 
-"@xterm/addon-web-links@npm:^0.12.0":
+"@xterm/addon-web-links@npm:0.12.0":
   version: 0.12.0
   resolution: "@xterm/addon-web-links@npm:0.12.0"
   checksum: 10c0/1c4847f43948483a6a0f59994090b8b9d9f6006a1e4a8deed7d9c28fcb47422d77eb418fb8fc63fbfb0c486c49e4646b73188ff2efac5290b680db34f298f334
   languageName: node
   linkType: hard
 
-"@xterm/xterm@npm:^6.0.0":
+"@xterm/xterm@npm:6.0.0":
   version: 6.0.0
   resolution: "@xterm/xterm@npm:6.0.0"
   checksum: 10c0/b99122553f323a65b708e5eba9903d4c5a1bcb59fe576d29d6e91a33002bccfd1b99403e1e839e1942f4952039db6d3d74ca9d65ed0399b4e9a0a5f35b8c12d9
@@ -1385,7 +1376,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"monaco-editor@npm:^0.57.0":
+"monaco-editor@npm:0.57.0":
   version: 0.57.0
   resolution: "monaco-editor@npm:0.57.0"
   dependencies:
@@ -1411,7 +1402,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"next@npm:^16.4.5":
+"next@npm:16.4.5":
   version: 16.4.5
   resolution: "next@npm:16.4.5"
   dependencies:
@@ -1529,7 +1520,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-dom@npm:^19.3.1":
+"react-dom@npm:19.3.1":
   version: 19.3.1
   resolution: "react-dom@npm:19.3.1"
   dependencies:
@@ -1540,7 +1531,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-markdown@npm:^10.1.0":
+"react-markdown@npm:10.1.0":
   version: 10.1.0
   resolution: "react-markdown@npm:10.1.0"
   dependencies:
@@ -1562,7 +1553,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react@npm:^19.3.1":
+"react@npm:19.3.1":
   version: 19.3.1
   resolution: "react@npm:19.3.1"
   checksum: 10c0/f0ed036d1223562c09c8347858ca712733ea6e27a30db709ee9c3f3f176d3e9e767afce735d59956addf3d030102e256bba82dea635fc1bdb0e01107e98fef10
@@ -1594,7 +1585,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"remark-gfm@npm:^4.0.1":
+"remark-gfm@npm:4.0.1":
   version: 4.0.1
   resolution: "remark-gfm@npm:4.0.1"
   dependencies:
@@ -1750,7 +1741,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"shiki@npm:^4.6.0":
+"shiki@npm:4.6.0":
   version: 4.6.0
   resolution: "shiki@npm:4.6.0"
   dependencies:
@@ -1828,21 +1819,20 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "tilalx@workspace:."
   dependencies:
-    "@shikijs/monaco": "npm:^4.6.0"
-    "@types/node": "npm:^26.6.6"
-    "@types/react": "npm:^19.3.0"
-    "@types/react-dom": "npm:^19.3.0"
-    "@xterm/addon-fit": "npm:^0.11.0"
-    "@xterm/addon-web-links": "npm:^0.12.0"
-    "@xterm/xterm": "npm:^6.0.0"
-    monaco-editor: "npm:^0.57.0"
-    next: "npm:^16.4.5"
-    react: "npm:^19.3.1"
-    react-dom: "npm:^19.3.1"
-    react-markdown: "npm:^10.1.0"
-    remark-gfm: "npm:^4.0.1"
-    shiki: "npm:^4.6.0"
-    typescript: "npm:^5"
+    "@shikijs/monaco": "npm:4.6.0"
+    "@types/node": "npm:26.6.6"
+    "@types/react": "npm:19.3.0"
+    "@xterm/addon-fit": "npm:0.11.0"
+    "@xterm/addon-web-links": "npm:0.12.0"
+    "@xterm/xterm": "npm:6.0.0"
+    monaco-editor: "npm:0.57.0"
+    next: "npm:16.4.5"
+    react: "npm:19.3.1"
+    react-dom: "npm:19.3.1"
+    react-markdown: "npm:10.1.0"
+    remark-gfm: "npm:4.0.1"
+    shiki: "npm:4.6.0"
+    typescript: "npm:5.9.3"
   languageName: unknown
   linkType: soft
 
@@ -1867,7 +1857,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@npm:^5":
+"typescript@npm:5.9.3":
   version: 5.9.3
   resolution: "typescript@npm:5.9.3"
   bin:
@@ -1877,7 +1867,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@patch:typescript@npm%3A^5#optional!builtin<compat/typescript>":
+"typescript@patch:typescript@npm%3A5.9.3#optional!builtin<compat/typescript>":
   version: 5.9.3
   resolution: "typescript@patch:typescript@npm%3A5.9.3#optional!builtin<compat/typescript>::version=5.9.3&hash=5786d5"
   bin:
